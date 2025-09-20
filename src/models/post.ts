@@ -12,7 +12,7 @@ export enum PostStatus {
 export async function insertPost(
   data: typeof posts.$inferInsert
 ): Promise<typeof posts.$inferSelect | undefined> {
-  const [post] = await db().insert(posts).values(data).returning();
+  const [post] = await db.insert(posts).values(data).returning();
 
   return post;
 }
@@ -21,7 +21,7 @@ export async function updatePost(
   uuid: string,
   data: Partial<typeof posts.$inferInsert>
 ): Promise<typeof posts.$inferSelect | undefined> {
-  const [post] = await db()
+  const [post] = await db
     .update(posts)
     .set(data)
     .where(eq(posts.uuid, uuid))
@@ -33,7 +33,7 @@ export async function updatePost(
 export async function findPostByUuid(
   uuid: string
 ): Promise<typeof posts.$inferSelect | undefined> {
-  const [post] = await db()
+  const [post] = await db
     .select()
     .from(posts)
     .where(eq(posts.uuid, uuid))
@@ -47,7 +47,7 @@ export async function findPostBySlug(
   locale: string
 ): Promise<typeof posts.$inferSelect | undefined> {
   slug = decodeURIComponent(slug);
-  const [post] = await db()
+  const [post] = await db
     .select()
     .from(posts)
     .where(and(eq(posts.slug, slug), eq(posts.locale, locale)))
@@ -62,7 +62,7 @@ export async function getAllPosts(
 ): Promise<(typeof posts.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(posts)
     .orderBy(desc(posts.created_at))
@@ -79,7 +79,7 @@ export async function getPostsByLocale(
 ): Promise<(typeof posts.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(posts)
     .where(and(eq(posts.locale, locale), eq(posts.status, PostStatus.Online)))
@@ -98,7 +98,7 @@ export async function getPostsByLocaleAndCategory(
 ): Promise<(typeof posts.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(posts)
     .where(
@@ -116,7 +116,7 @@ export async function getPostsByLocaleAndCategory(
 }
 
 export async function getPostsTotal(): Promise<number> {
-  const total = await db().$count(posts);
+  const total = await db.$count(posts);
 
   return total;
 }

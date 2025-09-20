@@ -6,7 +6,7 @@ import { desc, eq } from "drizzle-orm";
 export async function insertFeedback(
   data: typeof feedbacks.$inferInsert
 ): Promise<typeof feedbacks.$inferSelect | undefined> {
-  const [feedback] = await db().insert(feedbacks).values(data).returning();
+  const [feedback] = await db.insert(feedbacks).values(data).returning();
 
   return feedback;
 }
@@ -14,7 +14,7 @@ export async function insertFeedback(
 export async function findFeedbackById(
   id: number
 ): Promise<typeof feedbacks.$inferSelect | undefined> {
-  const [feedback] = await db()
+  const [feedback] = await db
     .select()
     .from(feedbacks)
     .where(eq(feedbacks.id, id))
@@ -29,7 +29,7 @@ export async function getFeedbacks(
 ): Promise<(typeof feedbacks.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(feedbacks)
     .orderBy(desc(feedbacks.created_at))
@@ -50,7 +50,7 @@ export async function getFeedbacks(
 }
 
 export async function getFeedbacksTotal(): Promise<number | undefined> {
-  const total = await db().$count(feedbacks);
+  const total = await db.$count(feedbacks);
 
   return total;
 }

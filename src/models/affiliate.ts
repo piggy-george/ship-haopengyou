@@ -6,7 +6,7 @@ import { desc, eq } from "drizzle-orm";
 export async function insertAffiliate(
   data: typeof affiliates.$inferInsert
 ): Promise<typeof affiliates.$inferSelect | undefined> {
-  const [affiliate] = await db().insert(affiliates).values(data).returning();
+  const [affiliate] = await db.insert(affiliates).values(data).returning();
 
   return affiliate;
 }
@@ -14,7 +14,7 @@ export async function insertAffiliate(
 export async function findAffiliateByUserUuid(
   user_uuid: string
 ): Promise<typeof affiliates.$inferSelect | undefined> {
-  const [affiliate] = await db()
+  const [affiliate] = await db
     .select()
     .from(affiliates)
     .where(eq(affiliates.user_uuid, user_uuid))
@@ -30,7 +30,7 @@ export async function getAffiliatesByUserUuid(
 ): Promise<(typeof affiliates.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(affiliates)
     .where(eq(affiliates.invited_by, user_uuid))
@@ -52,7 +52,7 @@ export async function getAffiliatesByUserUuid(
 }
 
 export async function getAffiliateSummary(user_uuid: string) {
-  const data = await db()
+  const data = await db
     .select()
     .from(affiliates)
     .where(eq(affiliates.invited_by, user_uuid));
@@ -82,7 +82,7 @@ export async function getAffiliateSummary(user_uuid: string) {
 }
 
 export async function findAffiliateByOrderNo(order_no: string) {
-  const [affiliate] = await db()
+  const [affiliate] = await db
     .select()
     .from(affiliates)
     .where(eq(affiliates.paid_order_no, order_no))
@@ -97,7 +97,7 @@ export async function getAllAffiliates(
 ): Promise<(typeof affiliates.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(affiliates)
     .orderBy(desc(affiliates.created_at))

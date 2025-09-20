@@ -12,7 +12,7 @@ export async function insertCredit(
     data.expired_at = new Date(data.expired_at);
   }
 
-  const [credit] = await db().insert(credits).values(data).returning();
+  const [credit] = await db.insert(credits).values(data).returning();
 
   return credit;
 }
@@ -20,7 +20,7 @@ export async function insertCredit(
 export async function findCreditByTransNo(
   trans_no: string
 ): Promise<typeof credits.$inferSelect | undefined> {
-  const [credit] = await db()
+  const [credit] = await db
     .select()
     .from(credits)
     .where(eq(credits.trans_no, trans_no))
@@ -32,7 +32,7 @@ export async function findCreditByTransNo(
 export async function findCreditByOrderNo(
   order_no: string
 ): Promise<typeof credits.$inferSelect | undefined> {
-  const [credit] = await db()
+  const [credit] = await db
     .select()
     .from(credits)
     .where(eq(credits.order_no, order_no))
@@ -45,7 +45,7 @@ export async function getUserValidCredits(
   user_uuid: string
 ): Promise<(typeof credits.$inferSelect)[] | undefined> {
   const now = new Date().toISOString();
-  const data = await db()
+  const data = await db
     .select()
     .from(credits)
     .where(
@@ -64,7 +64,7 @@ export async function getCreditsByUserUuid(
   page: number = 1,
   limit: number = 50
 ): Promise<(typeof credits.$inferSelect)[] | undefined> {
-  const data = await db()
+  const data = await db
     .select()
     .from(credits)
     .where(eq(credits.user_uuid, user_uuid))

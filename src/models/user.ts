@@ -5,7 +5,7 @@ import { desc, eq, gte, inArray } from "drizzle-orm";
 export async function insertUser(
   data: typeof users.$inferInsert
 ): Promise<typeof users.$inferSelect | undefined> {
-  const [user] = await db().insert(users).values(data).returning();
+  const [user] = await db.insert(users).values(data).returning();
 
   return user;
 }
@@ -13,7 +13,7 @@ export async function insertUser(
 export async function findUserByEmail(
   email: string
 ): Promise<typeof users.$inferSelect | undefined> {
-  const [user] = await db()
+  const [user] = await db
     .select()
     .from(users)
     .where(eq(users.email, email))
@@ -25,7 +25,7 @@ export async function findUserByEmail(
 export async function findUserByUuid(
   uuid: string
 ): Promise<typeof users.$inferSelect | undefined> {
-  const [user] = await db()
+  const [user] = await db
     .select()
     .from(users)
     .where(eq(users.uuid, uuid))
@@ -40,7 +40,7 @@ export async function getUsers(
 ): Promise<(typeof users.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(users)
     .orderBy(desc(users.created_at))
@@ -54,7 +54,7 @@ export async function updateUserInviteCode(
   user_uuid: string,
   invite_code: string
 ): Promise<typeof users.$inferSelect | undefined> {
-  const [user] = await db()
+  const [user] = await db
     .update(users)
     .set({ invite_code, updated_at: new Date() })
     .where(eq(users.uuid, user_uuid))
@@ -67,7 +67,7 @@ export async function updateUserInvitedBy(
   user_uuid: string,
   invited_by: string
 ): Promise<typeof users.$inferSelect | undefined> {
-  const [user] = await db()
+  const [user] = await db
     .update(users)
     .set({ invited_by, updated_at: new Date() })
     .where(eq(users.uuid, user_uuid))
@@ -79,7 +79,7 @@ export async function updateUserInvitedBy(
 export async function getUsersByUuids(
   user_uuids: string[]
 ): Promise<(typeof users.$inferSelect)[] | undefined> {
-  const data = await db()
+  const data = await db
     .select()
     .from(users)
     .where(inArray(users.uuid, user_uuids));
@@ -90,7 +90,7 @@ export async function getUsersByUuids(
 export async function findUserByInviteCode(
   invite_code: string
 ): Promise<typeof users.$inferSelect | undefined> {
-  const [user] = await db()
+  const [user] = await db
     .select()
     .from(users)
     .where(eq(users.invite_code, invite_code))
@@ -102,7 +102,7 @@ export async function findUserByInviteCode(
 export async function getUserUuidsByEmail(
   email: string
 ): Promise<string[] | undefined> {
-  const data = await db()
+  const data = await db
     .select({ uuid: users.uuid })
     .from(users)
     .where(eq(users.email, email));
@@ -111,7 +111,7 @@ export async function getUserUuidsByEmail(
 }
 
 export async function getUsersTotal(): Promise<number> {
-  const total = await db().$count(users);
+  const total = await db.$count(users);
 
   return total;
 }
@@ -119,7 +119,7 @@ export async function getUsersTotal(): Promise<number> {
 export async function getUserCountByDate(
   startTime: string
 ): Promise<Map<string, number> | undefined> {
-  const data = await db()
+  const data = await db
     .select({ created_at: users.created_at })
     .from(users)
     .where(gte(users.created_at, new Date(startTime)));

@@ -12,7 +12,7 @@ export enum CategoryStatus {
 export async function insertCategory(
   data: typeof categories.$inferInsert
 ): Promise<typeof categories.$inferSelect | undefined> {
-  const [category] = await db().insert(categories).values(data).returning();
+  const [category] = await db.insert(categories).values(data).returning();
 
   return category;
 }
@@ -21,7 +21,7 @@ export async function updateCategory(
   uuid: string,
   data: Partial<typeof categories.$inferInsert>
 ): Promise<typeof categories.$inferSelect | undefined> {
-  const [category] = await db()
+  const [category] = await db
     .update(categories)
     .set(data)
     .where(eq(categories.uuid, uuid))
@@ -33,7 +33,7 @@ export async function updateCategory(
 export async function findCategoryByName(
   name: string
 ): Promise<typeof categories.$inferSelect | undefined> {
-  const [category] = await db()
+  const [category] = await db
     .select()
     .from(categories)
     .where(
@@ -50,7 +50,7 @@ export async function findCategoryByName(
 export async function findCategoryByUuid(
   uuid: string
 ): Promise<typeof categories.$inferSelect | undefined> {
-  const [category] = await db()
+  const [category] = await db
     .select()
     .from(categories)
     .where(and(eq(categories.uuid, uuid)))
@@ -70,7 +70,7 @@ export async function getCategories({
 }): Promise<(typeof categories.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(categories)
     .where(status ? eq(categories.status, status) : undefined)
@@ -86,7 +86,7 @@ export async function getCategoriesTotal({
 }: {
   status?: CategoryStatus;
 }): Promise<number> {
-  const [{ total }] = await db()
+  const [{ total }] = await db
     .select({ total: count() })
     .from(categories)
     .where(status ? eq(categories.status, status) : undefined);

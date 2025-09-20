@@ -66,7 +66,7 @@ export class Storage {
     const request = new Request(url, {
       method: "PUT",
       headers,
-      body: bodyArray,
+      body: body instanceof Buffer ? body : new Uint8Array(body),
     });
 
     const response = await client.fetch(request);

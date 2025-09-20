@@ -3,39 +3,51 @@
   "theme": "light",
   "header": {
     "brand": {
-      "title": "ShipAny",
+      "title": "好朋友AI造物",
       "logo": {
         "src": "/logo.png",
-        "alt": "ShipAny"
+        "alt": "好朋友AI造物"
       },
       "url": "/"
     },
     "nav": {
       "items": [
         {
-          "title": "功能特点",
-          "url": "/#feature",
-          "icon": "RiSparkling2Line"
+          "title": "AI创作",
+          "url": "/create",
+          "icon": "RiMagicLine"
         },
         {
-          "title": "定价",
-          "url": "/pricing",
-          "icon": "RiMoneyDollarCircleLine"
+          "title": "商城",
+          "url": "/marketplace",
+          "icon": "RiShoppingBag3Line"
         },
         {
-          "title": "案例展示",
-          "url": "/showcase",
-          "icon": "RiApps2Line"
+          "title": "好朋友社区",
+          "url": "/community",
+          "icon": "RiTeamLine"
         },
         {
-          "title": "博客",
-          "url": "/posts",
-          "icon": "RiArticleLine"
+          "title": "创作者中心",
+          "url": "/creator/dashboard",
+          "icon": "RiDashboardLine"
         },
         {
-          "title": "文档",
-          "url": "/docs",
-          "icon": "RiBookOpenLine"
+          "title": "我的定制",
+          "children": [
+            {
+              "title": "我的订单",
+              "url": "/my-orders",
+              "icon": "RiFileListLine",
+              "description": "查看订单状态和历史"
+            },
+            {
+              "title": "我的积分",
+              "url": "/my-credits",
+              "icon": "RiCoinLine",
+              "description": "管理AI生成积分"
+            }
+          ]
         }
       ]
     },

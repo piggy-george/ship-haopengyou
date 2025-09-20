@@ -20,7 +20,7 @@ export async function insertOrder(data: typeof orders.$inferInsert) {
     data.paid_at = new Date(data.paid_at);
   }
 
-  const [order] = await db().insert(orders).values(data).returning();
+  const [order] = await db.insert(orders).values(data).returning();
 
   return order;
 }
@@ -28,7 +28,7 @@ export async function insertOrder(data: typeof orders.$inferInsert) {
 export async function findOrderByOrderNo(
   order_no: string
 ): Promise<typeof orders.$inferSelect | undefined> {
-  const [order] = await db()
+  const [order] = await db
     .select()
     .from(orders)
     .where(eq(orders.order_no, order_no))
@@ -40,7 +40,7 @@ export async function findOrderByOrderNo(
 export async function getFirstPaidOrderByUserUuid(
   user_uuid: string
 ): Promise<typeof orders.$inferSelect | undefined> {
-  const [order] = await db()
+  const [order] = await db
     .select()
     .from(orders)
     .where(
@@ -55,7 +55,7 @@ export async function getFirstPaidOrderByUserUuid(
 export async function getFirstPaidOrderByUserEmail(
   user_email: string
 ): Promise<typeof orders.$inferSelect | undefined> {
-  const [order] = await db()
+  const [order] = await db
     .select()
     .from(orders)
     .where(
@@ -77,7 +77,7 @@ export async function updateOrderStatus(
   paid_email: string,
   paid_detail: string
 ) {
-  const [order] = await db()
+  const [order] = await db
     .update(orders)
     .set({ status, paid_at: new Date(paid_at), paid_detail, paid_email })
     .where(eq(orders.order_no, order_no))
@@ -91,7 +91,7 @@ export async function updateOrderSession(
   stripe_session_id: string,
   order_detail: string
 ) {
-  const [order] = await db()
+  const [order] = await db
     .update(orders)
     .set({ stripe_session_id, order_detail })
     .where(eq(orders.order_no, order_no))
@@ -113,7 +113,7 @@ export async function updateOrderSubscription(
   paid_email: string,
   paid_detail: string
 ) {
-  const [order] = await db()
+  const [order] = await db
     .update(orders)
     .set({
       sub_id,
@@ -136,7 +136,7 @@ export async function updateOrderSubscription(
 export async function getOrdersByUserUuid(
   user_uuid: string
 ): Promise<(typeof orders.$inferSelect)[] | undefined> {
-  const data = await db()
+  const data = await db
     .select()
     .from(orders)
     .where(
@@ -150,7 +150,7 @@ export async function getOrdersByUserUuid(
 export async function getOrdersByUserEmail(
   user_email: string
 ): Promise<(typeof orders.$inferSelect)[] | undefined> {
-  const data = await db()
+  const data = await db
     .select()
     .from(orders)
     .where(
@@ -167,7 +167,7 @@ export async function getOrdersByUserEmail(
 export async function getOrdersByPaidEmail(
   paid_email: string
 ): Promise<(typeof orders.$inferSelect)[] | undefined> {
-  const data = await db()
+  const data = await db
     .select()
     .from(orders)
     .where(
@@ -185,7 +185,7 @@ export async function getPaiedOrders(
   page: number,
   limit: number
 ): Promise<(typeof orders.$inferSelect)[] | undefined> {
-  const data = await db()
+  const data = await db
     .select()
     .from(orders)
     .where(eq(orders.status, OrderStatus.Paid))
@@ -197,7 +197,7 @@ export async function getPaiedOrders(
 }
 
 export async function getPaidOrdersTotal(): Promise<number | undefined> {
-  const total = await db().$count(orders);
+  const total = await db.$count(orders);
 
   return total;
 }
@@ -206,7 +206,7 @@ export async function getOrderCountByDate(
   startTime: string,
   status?: string
 ): Promise<Map<string, number> | undefined> {
-  const data = await db()
+  const data = await db
     .select({ created_at: orders.created_at })
     .from(orders)
     .where(gte(orders.created_at, new Date(startTime)));

@@ -27,13 +27,32 @@ import {
 import { Header as HeaderType } from "@/types/blocks/header";
 import Icon from "@/components/icon";
 import { Link } from "@/i18n/navigation";
+import NextLink from "next/link";
 import LocaleToggle from "@/components/locale/toggle";
 import { Menu } from "lucide-react";
 import SignToggle from "@/components/sign/toggle";
 import ThemeToggle from "@/components/theme/toggle";
 import { cn } from "@/lib/utils";
+import { useParams } from "next/navigation";
+import { useLocale } from "next-intl";
 
 export default function Header({ header }: { header: HeaderType }) {
+  const locale = useLocale();
+
+  // Debug: 添加控制台输出来检查locale值
+  console.log('Header locale from useLocale:', locale);
+
+  // Helper function to create locale-aware URLs
+  const createLocalizedUrl = (url: string) => {
+    if (!url || url.startsWith('http') || url.startsWith('#')) {
+      return url;
+    }
+    if (url.startsWith('/')) {
+      return `/${locale}${url}`;
+    }
+    return `/${locale}/${url}`;
+  };
+
   if (header.disabled) {
     return null;
   }
@@ -44,7 +63,7 @@ export default function Header({ header }: { header: HeaderType }) {
         <nav className="hidden justify-between lg:flex">
           <div className="flex items-center gap-6">
             <Link
-              href={(header.brand?.url as any) || "/"}
+              href={header.brand?.url || "/"}
               className="flex items-center gap-2"
             >
               {header.brand?.logo?.src && (
@@ -88,7 +107,7 @@ export default function Header({ header }: { header: HeaderType }) {
                                       className={cn(
                                         "flex select-none gap-4 rounded-md p-3 leading-none no-underline outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                       )}
-                                      href={iitem.url as any}
+                                      href={iitem.url!}
                                       target={iitem.target}
                                     >
                                       {iitem.icon && (
@@ -117,7 +136,7 @@ export default function Header({ header }: { header: HeaderType }) {
 
                     return (
                       <NavigationMenuItem key={i}>
-                        <Link
+                        <NextLink
                           className={cn(
                             "text-muted-foreground",
                             navigationMenuTriggerStyle,
@@ -125,7 +144,7 @@ export default function Header({ header }: { header: HeaderType }) {
                               variant: "ghost",
                             })
                           )}
-                          href={item.url as any}
+                          href={createLocalizedUrl(item.url!)}
                           target={item.target}
                         >
                           {item.icon && (
@@ -135,7 +154,7 @@ export default function Header({ header }: { header: HeaderType }) {
                             />
                           )}
                           {item.title}
-                        </Link>
+                        </NextLink>
                       </NavigationMenuItem>
                     );
                   })}
@@ -151,7 +170,7 @@ export default function Header({ header }: { header: HeaderType }) {
               return (
                 <Button key={i} variant={item.variant}>
                   <Link
-                    href={item.url as any}
+                    href={item.url!}
                     target={item.target || ""}
                     className="flex items-center gap-1 cursor-pointer"
                   >
@@ -170,7 +189,7 @@ export default function Header({ header }: { header: HeaderType }) {
         <div className="block lg:hidden">
           <div className="flex items-center justify-between">
             <Link
-              href={(header.brand?.url || "/") as any}
+              href={header.brand?.url || "/"}
               className="flex items-center gap-2"
             >
               {header.brand?.logo?.src && (
@@ -196,7 +215,7 @@ export default function Header({ header }: { header: HeaderType }) {
                 <SheetHeader>
                   <SheetTitle>
                     <Link
-                      href={(header.brand?.url || "/") as any}
+                      href={header.brand?.url || "/"}
                       className="flex items-center gap-2"
                     >
                       {header.brand?.logo?.src && (
@@ -234,7 +253,7 @@ export default function Header({ header }: { header: HeaderType }) {
                                   className={cn(
                                     "flex select-none gap-4 rounded-md p-3 leading-none outline-hidden transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                   )}
-                                  href={iitem.url as any}
+                                  href={iitem.url!}
                                   target={iitem.target}
                                 >
                                   {iitem.icon && (
@@ -260,7 +279,7 @@ export default function Header({ header }: { header: HeaderType }) {
                       return (
                         <Link
                           key={i}
-                          href={item.url as any}
+                          href={item.url!}
                           target={item.target}
                           className="font-semibold my-4 flex items-center gap-2 px-4"
                         >
@@ -283,7 +302,7 @@ export default function Header({ header }: { header: HeaderType }) {
                       return (
                         <Button key={i} variant={item.variant}>
                           <Link
-                            href={item.url as any}
+                            href={item.url!}
                             target={item.target || ""}
                             className="flex items-center gap-1"
                           >

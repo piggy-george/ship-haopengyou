@@ -11,7 +11,7 @@ export enum ApikeyStatus {
 export async function insertApikey(
   data: typeof apikeys.$inferInsert
 ): Promise<typeof apikeys.$inferSelect | undefined> {
-  const [apikey] = await db().insert(apikeys).values(data).returning();
+  const [apikey] = await db.insert(apikeys).values(data).returning();
 
   return apikey;
 }
@@ -23,7 +23,7 @@ export async function getUserApikeys(
 ): Promise<(typeof apikeys.$inferSelect)[] | undefined> {
   const offset = (page - 1) * limit;
 
-  const data = await db()
+  const data = await db
     .select()
     .from(apikeys)
     .where(
@@ -42,7 +42,7 @@ export async function getUserApikeys(
 export async function getUserUuidByApiKey(
   apiKey: string
 ): Promise<string | undefined> {
-  const [apikey] = await db()
+  const [apikey] = await db
     .select()
     .from(apikeys)
     .where(

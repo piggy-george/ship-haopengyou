@@ -83,8 +83,9 @@ export async function POST(req: Request) {
       return respErr("invalid user");
     }
 
-    // generate order_no
+    // generate order_no and uuid
     const order_no = getSnowId();
+    const order_uuid = getSnowId();
 
     const currentDate = new Date();
     const created_at = currentDate.toISOString();
@@ -111,6 +112,7 @@ export async function POST(req: Request) {
 
     // create order
     const order = {
+      uuid: order_uuid,
       order_no: order_no,
       created_at: new Date(created_at),
       user_uuid: user_uuid,
