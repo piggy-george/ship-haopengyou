@@ -372,7 +372,7 @@ export const communityPosts = pgTable("community_posts", {
   shares: integer().notNull().default(0),
 
   // 状态管理
-  status: varchar({ length: 50 }).notNull().default('draft'), // draft, published, hidden, deleted
+  status: varchar({ length: 50 }).notNull().default('draft'), // draft, pending, published, rejected, hidden, deleted
   published_at: timestamp({ withTimezone: true }),
   featured: boolean().notNull().default(false),
 

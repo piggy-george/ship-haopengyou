@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { db } from '@/db'
 import { communityPosts, users, creators, products } from '@/db/schema'
 import { eq, desc, and, like } from 'drizzle-orm'
+import { v4 as uuidv4 } from 'uuid'
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,16 +13,28 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let whereConditions = [eq(communityPosts.status, 'published')]
+    // 对于公开API，只显示已发布的内容，除非是管理员接口
+    let whereConditions = []
 
-    // 筛选条件
-    switch (filter) {
-      case 'ai':
-        whereConditions.push(eq(communityPosts.is_ai_generated, true))
-        break
-      case 'featured':
-        whereConditions.push(eq(communityPosts.featured, true))
-        break
+    // 状态筛选逻辑
+    if (!filter || filter === 'all') {
+      // 默认只显示已发布的
+      whereConditions.push(eq(communityPosts.status, 'published'))
+    } else if (['draft', 'pending', 'published', 'rejected', 'hidden', 'deleted'].includes(filter)) {
+      // 指定状态筛选（通常用于管理后台）
+      whereConditions.push(eq(communityPosts.status, filter))
+    } else {
+      // 内容类型筛选（ai, featured等），保持已发布状态
+      whereConditions.push(eq(communityPosts.status, 'published'))
+
+      switch (filter) {
+        case 'ai':
+          whereConditions.push(eq(communityPosts.is_ai_generated, true))
+          break
+        case 'featured':
+          whereConditions.push(eq(communityPosts.featured, true))
+          break
+      }
     }
 
     // 标签筛选
@@ -96,6 +110,83 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('Failed to fetch community posts:', error)
+    return NextResponse.json({ error: '服务器错误' }, { status: 500 })
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session) {
+      return NextResponse.json({ error: '请先登录' }, { status: 401 })
+    }
+
+    const {
+      title,
+      content,
+      images,
+      videoUrl,
+      productUuid,
+      isAiGenerated,
+      aiPrompt,
+      generationCost,
+      isDraft = false
+    } = await req.json()
+
+    // 验证必填字段
+    if (!title || !images || !Array.isArray(images) || images.length === 0) {
+      return NextResponse.json({ error: '标题和图片不能为空' }, { status: 400 })
+    }
+
+    // 限制图片数量
+    if (images.length > 9) {
+      return NextResponse.json({ error: '最多只能上传9张图片' }, { status: 400 })
+    }
+
+    // 验证标题长度
+    if (title.length > 100) {
+      return NextResponse.json({ error: '标题不能超过100个字符' }, { status: 400 })
+    }
+
+    // 验证内容长度
+    if (content && content.length > 2000) {
+      return NextResponse.json({ error: '内容不能超过2000个字符' }, { status: 400 })
+    }
+
+    // 创建帖子
+    const postUuid = uuidv4()
+    const status = isDraft ? 'draft' : 'pending' // 草稿或待审核
+
+    const [newPost] = await db.insert(communityPosts).values({
+      uuid: postUuid,
+      author_uuid: session.user.id,
+      title,
+      content: content || null,
+      images: images,
+      video_url: videoUrl || null,
+      product_uuid: productUuid || null,
+      is_ai_generated: isAiGenerated || false,
+      ai_prompt: aiPrompt || null,
+      generation_cost: generationCost || null,
+      status,
+      published_at: status === 'pending' ? new Date() : null,
+      created_at: new Date(),
+      updated_at: new Date()
+    }).returning()
+
+    return NextResponse.json({
+      success: true,
+      post: {
+        uuid: newPost.uuid,
+        title: newPost.title,
+        status: newPost.status,
+        createdAt: newPost.created_at?.toISOString()
+      },
+      message: isDraft ? '作品已保存为草稿' : '作品已提交，等待审核'
+    })
+
+  } catch (error) {
+    console.error('Failed to create community post:', error)
     return NextResponse.json({ error: '服务器错误' }, { status: 500 })
   }
 }

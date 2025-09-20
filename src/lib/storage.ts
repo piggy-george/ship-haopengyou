@@ -120,3 +120,33 @@ export class Storage {
     });
   }
 }
+
+// 简化的上传函数
+export async function uploadToStorage(file: File, folder: string = 'uploads', userId?: string): Promise<string> {
+  const storage = newStorage()
+
+  // 生成唯一文件名
+  const timestamp = Date.now()
+  const randomString = Math.random().toString(36).substring(2, 15)
+  const fileExtension = file.name.split('.').pop()
+  const fileName = `${timestamp}_${randomString}.${fileExtension}`
+
+  // 构建存储路径
+  const key = userId
+    ? `${folder}/${userId}/${fileName}`
+    : `${folder}/${fileName}`
+
+  // 转换文件为Buffer
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = new Uint8Array(arrayBuffer)
+
+  // 上传文件
+  const result = await storage.uploadFile({
+    body: buffer,
+    key,
+    contentType: file.type,
+    disposition: 'inline'
+  })
+
+  return result.url
+}
