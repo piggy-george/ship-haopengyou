@@ -1,0 +1,260 @@
+2025-09-27T17:58:57:  ⚠ Invalid next.config.mjs options detected: 
+2025-09-27T17:58:57:  ⚠     Unrecognized key(s) in object: 'turbopack'
+2025-09-27T17:58:57:  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2025-09-27T17:58:57:  ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+2025-09-27T17:58:58: Error: Language "zh" is not supported.
+2025-09-27T17:58:58: Supported languages are:
+2025-09-27T17:58:58:  - arabic
+2025-09-27T17:58:58:  - armenian
+2025-09-27T17:58:58:  - bulgarian
+2025-09-27T17:58:58:  - czech
+2025-09-27T17:58:58:  - danish
+2025-09-27T17:58:58:  - dutch
+2025-09-27T17:58:58:  - english
+2025-09-27T17:58:58:  - finnish
+2025-09-27T17:58:58:  - french
+2025-09-27T17:58:58:  - german
+2025-09-27T17:58:58:  - greek
+2025-09-27T17:58:58:  - hungarian
+2025-09-27T17:58:58:  - indian
+2025-09-27T17:58:58:  - indonesian
+2025-09-27T17:58:58:  - irish
+2025-09-27T17:58:58:  - italian
+2025-09-27T17:58:58:  - lithuanian
+2025-09-27T17:58:58:  - nepali
+2025-09-27T17:58:58:  - norwegian
+2025-09-27T17:58:58:  - portuguese
+2025-09-27T17:58:58:  - romanian
+2025-09-27T17:58:58:  - russian
+2025-09-27T17:58:58:  - serbian
+2025-09-27T17:58:58:  - slovenian
+2025-09-27T17:58:58:  - spanish
+2025-09-27T17:58:58:  - swedish
+2025-09-27T17:58:58:  - tamil
+2025-09-27T17:58:58:  - turkish
+2025-09-27T17:58:58:  - ukrainian
+2025-09-27T17:58:58:  - sanskrit
+2025-09-27T17:58:58:     at z (.next/server/app/api/docs/search/route.js:10:288)
+2025-09-27T17:58:58:     at e6 (.next/server/app/api/docs/search/route.js:10:31204)
+2025-09-27T17:58:58:     at e5 (.next/server/app/api/docs/search/route.js:10:32628)
+2025-09-27T17:58:58:     at tA (.next/server/app/api/docs/search/route.js:10:53807)
+2025-09-27T17:58:58:     at tU (.next/server/app/api/docs/search/route.js:10:56519)
+2025-09-27T17:58:58:     at tz (.next/server/app/api/docs/search/route.js:10:56307) {
+2025-09-27T17:58:58:   code: 'LANGUAGE_NOT_SUPPORTED'
+2025-09-27T17:58:58: }
+2025-09-27T17:58:58:  ⨯ unhandledRejection:  Error: Language "zh" is not supported.
+2025-09-27T17:58:58: Supported languages are:
+2025-09-27T17:58:58:  - arabic
+2025-09-27T17:58:58:  - armenian
+2025-09-27T17:58:58:  - bulgarian
+2025-09-27T17:58:58:  - czech
+2025-09-27T17:58:58:  - danish
+2025-09-27T17:58:58:  - dutch
+2025-09-27T17:58:58:  - english
+2025-09-27T17:58:58:  - finnish
+2025-09-27T17:58:58:  - french
+2025-09-27T17:58:58:  - german
+2025-09-27T17:58:58:  - greek
+2025-09-27T17:58:58:  - hungarian
+2025-09-27T17:58:58:  - indian
+2025-09-27T17:58:58:  - indonesian
+2025-09-27T17:58:58:  - irish
+2025-09-27T17:58:58:  - italian
+2025-09-27T17:58:58:  - lithuanian
+2025-09-27T17:58:58:  - nepali
+2025-09-27T17:58:58:  - norwegian
+2025-09-27T17:58:58:  - portuguese
+2025-09-27T17:58:58:  - romanian
+2025-09-27T17:58:58:  - russian
+2025-09-27T17:58:58:  - serbian
+2025-09-27T17:58:58:  - slovenian
+2025-09-27T17:58:58:  - spanish
+2025-09-27T17:58:58:  - swedish
+2025-09-27T17:58:58:  - tamil
+2025-09-27T17:58:58:  - turkish
+2025-09-27T17:58:58:  - ukrainian
+2025-09-27T17:58:58:  - sanskrit
+2025-09-27T17:58:58:     at z (.next/server/app/api/docs/search/route.js:10:288)
+2025-09-27T17:58:58:     at e6 (.next/server/app/api/docs/search/route.js:10:31204)
+2025-09-27T17:58:58:     at e5 (.next/server/app/api/docs/search/route.js:10:32628)
+2025-09-27T17:58:58:     at tA (.next/server/app/api/docs/search/route.js:10:53807)
+2025-09-27T17:58:58:     at tU (.next/server/app/api/docs/search/route.js:10:56519)
+2025-09-27T17:58:58:     at tz (.next/server/app/api/docs/search/route.js:10:56307) {
+2025-09-27T17:58:58:   code: 'LANGUAGE_NOT_SUPPORTED'
+2025-09-27T17:58:58: }
+2025-09-27T18:00:34:  ⨯ TypeError: Cannot destructure property 'data' of '(0 , a.wV)(...)' as it is undefined.
+2025-09-27T18:00:34:     at p (.next/server/app/[locale]/(default)/create/page.js:1:6003) {
+2025-09-27T18:00:34:   digest: '3706886383'
+2025-09-27T18:00:34: }
+2025-09-27T18:00:41:  ⨯ TypeError: Cannot destructure property 'data' of '(0 , a.wV)(...)' as it is undefined.
+2025-09-27T18:00:41:     at p (.next/server/app/[locale]/(default)/create/page.js:1:6003) {
+2025-09-27T18:00:41:   digest: '3706886383'
+2025-09-27T18:00:41: }
+2025-09-27T18:02:52:  ⚠ Invalid next.config.mjs options detected: 
+2025-09-27T18:02:52:  ⚠     Unrecognized key(s) in object: 'turbopack'
+2025-09-27T18:02:52:  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2025-09-27T18:02:52:  ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+2025-09-27T18:02:53: Error: Language "zh" is not supported.
+2025-09-27T18:02:53: Supported languages are:
+2025-09-27T18:02:53:  - arabic
+2025-09-27T18:02:53:  - armenian
+2025-09-27T18:02:53:  - bulgarian
+2025-09-27T18:02:53:  - czech
+2025-09-27T18:02:53:  - danish
+2025-09-27T18:02:53:  - dutch
+2025-09-27T18:02:53:  - english
+2025-09-27T18:02:53:  - finnish
+2025-09-27T18:02:53:  - french
+2025-09-27T18:02:53:  - german
+2025-09-27T18:02:53:  - greek
+2025-09-27T18:02:53:  - hungarian
+2025-09-27T18:02:53:  - indian
+2025-09-27T18:02:53:  - indonesian
+2025-09-27T18:02:53:  - irish
+2025-09-27T18:02:53:  - italian
+2025-09-27T18:02:53:  - lithuanian
+2025-09-27T18:02:53:  - nepali
+2025-09-27T18:02:53:  - norwegian
+2025-09-27T18:02:53:  - portuguese
+2025-09-27T18:02:53:  - romanian
+2025-09-27T18:02:53:  - russian
+2025-09-27T18:02:53:  - serbian
+2025-09-27T18:02:53:  - slovenian
+2025-09-27T18:02:53:  - spanish
+2025-09-27T18:02:53:  - swedish
+2025-09-27T18:02:53:  - tamil
+2025-09-27T18:02:53:  - turkish
+2025-09-27T18:02:53:  - ukrainian
+2025-09-27T18:02:53:  - sanskrit
+2025-09-27T18:02:53:     at z (.next/server/app/api/docs/search/route.js:10:288)
+2025-09-27T18:02:53:     at e6 (.next/server/app/api/docs/search/route.js:10:31204)
+2025-09-27T18:02:53:     at e5 (.next/server/app/api/docs/search/route.js:10:32628)
+2025-09-27T18:02:53:     at tA (.next/server/app/api/docs/search/route.js:10:53807)
+2025-09-27T18:02:53:     at tU (.next/server/app/api/docs/search/route.js:10:56519)
+2025-09-27T18:02:53:     at tz (.next/server/app/api/docs/search/route.js:10:56307) {
+2025-09-27T18:02:53:   code: 'LANGUAGE_NOT_SUPPORTED'
+2025-09-27T18:02:53: }
+2025-09-27T18:02:53:  ⨯ unhandledRejection:  Error: Language "zh" is not supported.
+2025-09-27T18:02:53: Supported languages are:
+2025-09-27T18:02:53:  - arabic
+2025-09-27T18:02:53:  - armenian
+2025-09-27T18:02:53:  - bulgarian
+2025-09-27T18:02:53:  - czech
+2025-09-27T18:02:53:  - danish
+2025-09-27T18:02:53:  - dutch
+2025-09-27T18:02:53:  - english
+2025-09-27T18:02:53:  - finnish
+2025-09-27T18:02:53:  - french
+2025-09-27T18:02:53:  - german
+2025-09-27T18:02:53:  - greek
+2025-09-27T18:02:53:  - hungarian
+2025-09-27T18:02:53:  - indian
+2025-09-27T18:02:53:  - indonesian
+2025-09-27T18:02:53:  - irish
+2025-09-27T18:02:53:  - italian
+2025-09-27T18:02:53:  - lithuanian
+2025-09-27T18:02:53:  - nepali
+2025-09-27T18:02:53:  - norwegian
+2025-09-27T18:02:53:  - portuguese
+2025-09-27T18:02:53:  - romanian
+2025-09-27T18:02:53:  - russian
+2025-09-27T18:02:53:  - serbian
+2025-09-27T18:02:53:  - slovenian
+2025-09-27T18:02:53:  - spanish
+2025-09-27T18:02:53:  - swedish
+2025-09-27T18:02:53:  - tamil
+2025-09-27T18:02:53:  - turkish
+2025-09-27T18:02:53:  - ukrainian
+2025-09-27T18:02:53:  - sanskrit
+2025-09-27T18:02:53:     at z (.next/server/app/api/docs/search/route.js:10:288)
+2025-09-27T18:02:53:     at e6 (.next/server/app/api/docs/search/route.js:10:31204)
+2025-09-27T18:02:53:     at e5 (.next/server/app/api/docs/search/route.js:10:32628)
+2025-09-27T18:02:53:     at tA (.next/server/app/api/docs/search/route.js:10:53807)
+2025-09-27T18:02:53:     at tU (.next/server/app/api/docs/search/route.js:10:56519)
+2025-09-27T18:02:53:     at tz (.next/server/app/api/docs/search/route.js:10:56307) {
+2025-09-27T18:02:53:   code: 'LANGUAGE_NOT_SUPPORTED'
+2025-09-27T18:02:53: }
+2025-09-27T18:06:16:  ⚠ Invalid next.config.mjs options detected: 
+2025-09-27T18:06:16:  ⚠     Unrecognized key(s) in object: 'turbopack'
+2025-09-27T18:06:16:  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2025-09-27T18:06:16:  ⚠ "next start" does not work with "output: standalone" configuration. Use "node .next/standalone/server.js" instead.
+2025-09-27T18:06:17: Error: Language "zh" is not supported.
+2025-09-27T18:06:17: Supported languages are:
+2025-09-27T18:06:17:  - arabic
+2025-09-27T18:06:17:  - armenian
+2025-09-27T18:06:17:  - bulgarian
+2025-09-27T18:06:17:  - czech
+2025-09-27T18:06:17:  - danish
+2025-09-27T18:06:17:  - dutch
+2025-09-27T18:06:17:  - english
+2025-09-27T18:06:17:  - finnish
+2025-09-27T18:06:17:  - french
+2025-09-27T18:06:17:  - german
+2025-09-27T18:06:17:  - greek
+2025-09-27T18:06:17:  - hungarian
+2025-09-27T18:06:17:  - indian
+2025-09-27T18:06:17:  - indonesian
+2025-09-27T18:06:17:  - irish
+2025-09-27T18:06:17:  - italian
+2025-09-27T18:06:17:  - lithuanian
+2025-09-27T18:06:17:  - nepali
+2025-09-27T18:06:17:  - norwegian
+2025-09-27T18:06:17:  - portuguese
+2025-09-27T18:06:17:  - romanian
+2025-09-27T18:06:17:  - russian
+2025-09-27T18:06:17:  - serbian
+2025-09-27T18:06:17:  - slovenian
+2025-09-27T18:06:17:  - spanish
+2025-09-27T18:06:17:  - swedish
+2025-09-27T18:06:17:  - tamil
+2025-09-27T18:06:17:  - turkish
+2025-09-27T18:06:17:  - ukrainian
+2025-09-27T18:06:17:  - sanskrit
+2025-09-27T18:06:17:     at z (.next/server/app/api/docs/search/route.js:10:288)
+2025-09-27T18:06:17:     at e6 (.next/server/app/api/docs/search/route.js:10:31204)
+2025-09-27T18:06:17:     at e5 (.next/server/app/api/docs/search/route.js:10:32628)
+2025-09-27T18:06:17:     at tA (.next/server/app/api/docs/search/route.js:10:53807)
+2025-09-27T18:06:17:     at tU (.next/server/app/api/docs/search/route.js:10:56519)
+2025-09-27T18:06:17:     at tz (.next/server/app/api/docs/search/route.js:10:56307) {
+2025-09-27T18:06:17:   code: 'LANGUAGE_NOT_SUPPORTED'
+2025-09-27T18:06:17: }
+2025-09-27T18:06:17:  ⨯ unhandledRejection:  Error: Language "zh" is not supported.
+2025-09-27T18:06:17: Supported languages are:
+2025-09-27T18:06:17:  - arabic
+2025-09-27T18:06:17:  - armenian
+2025-09-27T18:06:17:  - bulgarian
+2025-09-27T18:06:17:  - czech
+2025-09-27T18:06:17:  - danish
+2025-09-27T18:06:17:  - dutch
+2025-09-27T18:06:17:  - english
+2025-09-27T18:06:17:  - finnish
+2025-09-27T18:06:17:  - french
+2025-09-27T18:06:17:  - german
+2025-09-27T18:06:17:  - greek
+2025-09-27T18:06:17:  - hungarian
+2025-09-27T18:06:17:  - indian
+2025-09-27T18:06:17:  - indonesian
+2025-09-27T18:06:17:  - irish
+2025-09-27T18:06:17:  - italian
+2025-09-27T18:06:17:  - lithuanian
+2025-09-27T18:06:17:  - nepali
+2025-09-27T18:06:17:  - norwegian
+2025-09-27T18:06:17:  - portuguese
+2025-09-27T18:06:17:  - romanian
+2025-09-27T18:06:17:  - russian
+2025-09-27T18:06:17:  - serbian
+2025-09-27T18:06:17:  - slovenian
+2025-09-27T18:06:17:  - spanish
+2025-09-27T18:06:17:  - swedish
+2025-09-27T18:06:17:  - tamil
+2025-09-27T18:06:17:  - turkish
+2025-09-27T18:06:17:  - ukrainian
+2025-09-27T18:06:17:  - sanskrit
+2025-09-27T18:06:17:     at z (.next/server/app/api/docs/search/route.js:10:288)
+2025-09-27T18:06:17:     at e6 (.next/server/app/api/docs/search/route.js:10:31204)
+2025-09-27T18:06:17:     at e5 (.next/server/app/api/docs/search/route.js:10:32628)
+2025-09-27T18:06:17:     at tA (.next/server/app/api/docs/search/route.js:10:53807)
+2025-09-27T18:06:17:     at tU (.next/server/app/api/docs/search/route.js:10:56519)
+2025-09-27T18:06:17:     at tz (.next/server/app/api/docs/search/route.js:10:56307) {
+2025-09-27T18:06:17:   code: 'LANGUAGE_NOT_SUPPORTED'
+2025-09-27T18:06:17: }

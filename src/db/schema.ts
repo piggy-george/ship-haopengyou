@@ -170,7 +170,7 @@ export const aiGenerationRecords = pgTable("ai_generation_records", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   uuid: varchar({ length: 255 }).notNull().unique(),
   user_uuid: varchar({ length: 255 }).notNull(),
-  type: varchar({ length: 50 }).notNull(), // text2img, img2img, text2model
+  type: varchar({ length: 50 }).notNull(), // text2img, img2img, text2model, text23d, img23d
   prompt: text(),
   negative_prompt: text(),
   output_urls: json(),
@@ -180,6 +180,22 @@ export const aiGenerationRecords = pgTable("ai_generation_records", {
   error_message: text(),
   created_at: timestamp({ withTimezone: true }).defaultNow(),
   completed_at: timestamp({ withTimezone: true }),
+
+  // 3D生成扩展字段
+  input_images: json(),
+  multi_view_images: json(),
+  cloud_job_id: varchar({ length: 255 }),
+  queue_position: integer(),
+  processing_started_at: timestamp({ withTimezone: true }),
+  expires_at: timestamp({ withTimezone: true }),
+
+  // 社区功能预埋字段
+  is_public: boolean().default(false),
+  share_settings: json(),
+  community_tags: json(),
+  like_count: integer().notNull().default(0),
+  view_count: integer().notNull().default(0),
+  featured: boolean().notNull().default(false),
 }, (table) => [
   index("ai_records_user_idx").on(table.user_uuid),
   index("ai_records_type_idx").on(table.type),
@@ -461,4 +477,36 @@ export const creditTransactions = pgTable("credit_transactions", {
 }, (table) => [
   index("credit_transactions_user_idx").on(table.user_uuid),
   index("credit_transactions_type_idx").on(table.type),
+]);
+
+// 3D模型队列管理表
+export const model3dQueue = pgTable("model3d_queue", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  record_uuid: varchar({ length: 255 }).notNull().unique(),
+  user_uuid: varchar({ length: 255 }).notNull(),
+  version: varchar({ length: 20 }).notNull(), // 'basic', 'pro', 'rapid'
+  priority: integer().notNull().default(0),
+  status: varchar({ length: 20 }).notNull().default('waiting'), // 'waiting', 'processing', 'completed', 'failed'
+  peak_period: boolean().notNull().default(false),
+  estimated_time: integer(),
+  created_at: timestamp({ withTimezone: true }).defaultNow(),
+  started_at: timestamp({ withTimezone: true }),
+  completed_at: timestamp({ withTimezone: true }),
+}, (table) => [
+  index("model3d_queue_status_idx").on(table.status),
+  index("model3d_queue_created_idx").on(table.created_at),
+  index("model3d_queue_peak_idx").on(table.peak_period),
+]);
+
+// 3D模型交互表（社区功能预留）
+export const model3dInteractions = pgTable("model3d_interactions", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  record_uuid: varchar({ length: 255 }).notNull(),
+  user_uuid: varchar({ length: 255 }).notNull(),
+  interaction_type: varchar({ length: 50 }).notNull(), // 'like', 'bookmark', 'comment', 'share'
+  created_at: timestamp({ withTimezone: true }).defaultNow(),
+  metadata: json(),
+}, (table) => [
+  index("model3d_interactions_record_idx").on(table.record_uuid),
+  index("model3d_interactions_user_idx").on(table.user_uuid),
 ]);

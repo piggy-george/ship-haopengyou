@@ -1,0 +1,18 @@
+
+> shipany-template-one@2.6.0 dev
+> cross-env NODE_NO_WARNINGS=1 next dev --turbopack --port 3005
+
+[MDX] updated map file in 12.189785000000029ms
+[MDX] started dev server
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3005
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3005)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3005
+}
+[?25h
+[MDX] closing dev server

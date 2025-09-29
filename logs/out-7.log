@@ -1,0 +1,41 @@
+2025-09-27T17:58:56: 
+2025-09-27T17:58:56: > shipany-template-one@2.6.0 start /home/ubuntu/ship-haopengyou
+2025-09-27T17:58:56: > NODE_NO_WARNINGS=1 next start
+2025-09-27T17:58:56: 
+2025-09-27T17:58:57:    ▲ Next.js 15.2.3
+2025-09-27T17:58:57:    - Local:        http://localhost:3005
+2025-09-27T17:58:57:    - Network:      http://10.1.24.7:3005
+2025-09-27T17:58:57: 
+2025-09-27T17:58:57:  ✓ Starting...
+2025-09-27T17:58:57:  ✓ Ready in 457ms
+2025-09-27T18:00:28: Header locale from useLocale: en
+2025-09-27T18:00:34: Header locale from useLocale: en
+2025-09-27T18:00:41: Header locale from useLocale: en
+2025-09-27T18:02:51: 
+2025-09-27T18:02:51: > shipany-template-one@2.6.0 start /home/ubuntu/ship-haopengyou
+2025-09-27T18:02:51: > NODE_NO_WARNINGS=1 next start
+2025-09-27T18:02:51: 
+2025-09-27T18:02:51:    ▲ Next.js 15.2.3
+2025-09-27T18:02:51:    - Local:        http://localhost:3005
+2025-09-27T18:02:51:    - Network:      http://10.1.24.7:3005
+2025-09-27T18:02:51: 
+2025-09-27T18:02:51:  ✓ Starting...
+2025-09-27T18:02:52:  ✓ Ready in 477ms
+2025-09-27T18:06:15: 
+2025-09-27T18:06:15: > shipany-template-one@2.6.0 start /home/ubuntu/ship-haopengyou
+2025-09-27T18:06:15: > NODE_NO_WARNINGS=1 next start
+2025-09-27T18:06:15: 
+2025-09-27T18:06:15:    ▲ Next.js 15.2.3
+2025-09-27T18:06:15:    - Local:        http://localhost:3005
+2025-09-27T18:06:15:    - Network:      http://10.1.24.7:3005
+2025-09-27T18:06:15: 
+2025-09-27T18:06:15:  ✓ Starting...
+2025-09-27T18:06:16:  ✓ Ready in 431ms
+2025-09-27T18:06:25: Header locale from useLocale: en
+2025-09-27T18:06:26: Header locale from useLocale: en
+2025-09-27T18:06:26: Header locale from useLocale: en
+2025-09-27T18:06:29: Header locale from useLocale: en
+2025-09-27T18:06:32: Header locale from useLocale: en
+2025-09-27T18:07:52: Header locale from useLocale: en
+2025-09-27T18:07:59: Header locale from useLocale: en
+2025-09-28T16:15:57: Header locale from useLocale: en
