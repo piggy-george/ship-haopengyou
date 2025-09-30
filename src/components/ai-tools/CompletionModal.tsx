@@ -21,6 +21,8 @@ interface CompletionModalProps {
     creditsUsed: number;
     prompt?: string;
     expiresAt?: string;
+    type?: string; // 'text23d' | 'img23d'
+    multiViewCount?: number; // 多视图数量
   };
   onPreview?: (url: string) => void;
   onARPreview?: (url: string) => void;
@@ -44,10 +46,30 @@ export function CompletionModal({
         ? `/api/proxy/3d-model?url=${encodeURIComponent(file.url)}`
         : file.url || '';
       
+      // 生成友好的文件名
+      const timestamp = new Date().getTime();
+      const shortId = modelData.recordId?.slice(0, 8) || 'model';
+      
+      // 根据生成类型构建文件名
+      let filename = '';
+      if (modelData.type === 'text23d') {
+        // 文生3D：使用提示词前10个字符
+        const promptPrefix = modelData.prompt 
+          ? modelData.prompt.substring(0, 10).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_')
+          : 'text';
+        filename = `3d_text_${promptPrefix}_${shortId}.${file.type.toLowerCase()}`;
+      } else if (modelData.multiViewCount && modelData.multiViewCount > 0) {
+        // 多视图图生3D
+        filename = `3d_multiview_${modelData.multiViewCount}views_${shortId}.${file.type.toLowerCase()}`;
+      } else {
+        // 单图生3D
+        filename = `3d_image_${shortId}.${file.type.toLowerCase()}`;
+      }
+      
       // 创建下载链接
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `model.${file.type.toLowerCase()}`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

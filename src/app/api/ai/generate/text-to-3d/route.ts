@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { Model3DService, type Model3DParams } from '@/lib/ai/model3d-service';
 import { SmartQueueManager } from '@/lib/queue/model3d-queue';
-import { newStorage } from '@/lib/storage';
+import { localStorage } from '@/lib/storage/local-storage';
 
 // 临时测试开关 - 测试完成后设置为 true
 const REQUIRE_LOGIN = false; // TODO: 测试完成后改为 true
@@ -42,6 +42,15 @@ export async function POST(req: NextRequest) {
       generateType = 'Normal',
       faceCount
     } = body;
+
+    console.log('[3D生成API] 请求参数:', {
+      hasPrompt: !!prompt,
+      hasImageUrl: !!imageUrl,
+      hasImageBase64: !!imageBase64 && imageBase64.length > 0,
+      multiViewCount: multiViewImages?.length || 0,
+      version,
+      generateType
+    });
 
     // 检查是否有任何有效输入：文本、主图片或多视图图片
     if (!prompt && !imageUrl && !imageBase64 && (!multiViewImages || multiViewImages.length === 0)) {
@@ -81,9 +90,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 生成记录UUID（需要提前生成，用于存储路径）
+    const recordUuid = uuidv4();
+
     // 处理多视图图片：分离正面图（主图）和其他视图
     let frontImage = null;
-    let processedMultiViewImages = [];
+    let processedMultiViewImages: Array<{viewType: 'left' | 'right' | 'back'; viewImageUrl: string}> = [];
     
     if (multiViewImages && multiViewImages.length > 0) {
       // 从多视图中提取正面图作为主图
@@ -94,59 +106,30 @@ export async function POST(req: NextRequest) {
         frontImage = frontView;
       }
       
-      // 如果有其他视图（left, right, back），需要存储服务支持
+      // 如果有其他视图（left, right, back），保存到本地存储
       if (otherViews.length > 0) {
-        // 检查存储服务是否已配置
-        const storageConfigured = process.env.STORAGE_ENDPOINT && 
-                                  process.env.STORAGE_BUCKET && 
-                                  process.env.STORAGE_ACCESS_KEY;
-        
-        if (!storageConfigured) {
-          // 存储服务未配置，返回友好错误信息
-          return NextResponse.json(
-            { 
-              error: '多视图功能需要存储服务支持',
-              details: '当前存储服务未配置，请联系管理员配置存储服务后再使用多视图功能。您可以只上传正面图进行生成。'
-            },
-            { status: 400 }
+        try {
+          const savedImages = await localStorage.saveMultiViewImages(
+            user.uuid,
+            recordUuid,
+            otherViews.map((img: any) => ({
+              viewType: img.viewType,
+              viewImageBase64: img.viewImageBase64
+            }))
           );
+
+          // 转换为完整URL（需要加上域名）
+          const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3000}`;
+          processedMultiViewImages = savedImages.map(img => ({
+            viewType: img.viewType as 'left' | 'right' | 'back',
+            viewImageUrl: `${baseUrl}${img.viewImageUrl}`
+          }));
+
+          console.log('[3D生成] 多视图图片已保存到本地:', processedMultiViewImages);
+        } catch (error) {
+          console.error('Failed to save multiview images:', error);
+          throw new Error('多视图图片保存失败');
         }
-        
-        const storage = newStorage();
-        processedMultiViewImages = await Promise.all(
-          otherViews.map(async (img: any) => {
-            if (img.viewImageBase64) {
-              // 上传base64图片到存储服务
-              const timestamp = Date.now();
-              const randomString = Math.random().toString(36).substring(2, 15);
-              const key = `3d-multiview/${user.uuid}/${timestamp}_${randomString}_${img.viewType}.png`;
-              
-              try {
-                const buffer = Buffer.from(img.viewImageBase64, 'base64');
-                const result = await storage.uploadFile({
-                  body: buffer,
-                  key,
-                  contentType: 'image/png',
-                  disposition: 'inline'
-                });
-                
-                return {
-                  viewType: img.viewType,
-                  viewImageUrl: result.url
-                };
-              } catch (error) {
-                console.error('Failed to upload multiview image:', error);
-                throw new Error('多视图图片上传失败');
-              }
-            } else if (img.viewImageUrl) {
-              return {
-                viewType: img.viewType, 
-                viewImageUrl: img.viewImageUrl
-              };
-            }
-            return img;
-          })
-        );
       }
     }
     
@@ -182,7 +165,6 @@ export async function POST(req: NextRequest) {
       .set({ credits: user.credits - creditsNeeded })
       .where(eq(users.uuid, user.uuid));
 
-    const recordUuid = uuidv4();
     const transUuid = uuidv4();
 
     await db.insert(aiGenerationRecords).values({

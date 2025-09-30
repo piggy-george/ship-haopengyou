@@ -61,6 +61,7 @@ export default function TextTo3DPage() {
   const [imageResultFormat, setImageResultFormat] = useState('GLB');
   const [imageGenerateType, setImageGenerateType] = useState('Normal');
   const [imageFaceCount, setImageFaceCount] = useState<number | undefined>(undefined);
+  const [currentImageTab, setCurrentImageTab] = useState<'single' | 'multi'>('single'); // 当前图片上传模式
 
   // 处理单张图片上传
   const handleSingleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,18 +273,39 @@ export default function TextTo3DPage() {
         }
       }
 
+      // 构建请求体
+      const requestBody: any = {
+        version: imageVersion,
+        enablePBR: imageEnablePBR,
+        resultFormat: imageResultFormat,
+      };
+
+      // 只在有值时添加参数
+      if (imageBase64) {
+        requestBody.imageBase64 = imageBase64;
+      }
+      
+      if (multiViewData.length > 0) {
+        requestBody.multiViewImages = multiViewData;
+      }
+
+      if (imageVersion === 'pro') {
+        requestBody.generateType = imageGenerateType;
+        if (imageFaceCount) {
+          requestBody.faceCount = imageFaceCount;
+        }
+      }
+
+      console.log('[前端] 发送请求:', {
+        hasImageBase64: !!imageBase64,
+        multiViewCount: multiViewData.length,
+        version: imageVersion
+      });
+
       const response = await fetch('/api/ai/generate/text-to-3d', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64,
-          multiViewImages: multiViewData.length > 0 ? multiViewData : undefined,
-          version: imageVersion,
-          enablePBR: imageEnablePBR,
-          resultFormat: imageResultFormat,
-          generateType: imageVersion === 'pro' ? imageGenerateType : undefined,
-          faceCount: imageVersion === 'pro' && imageFaceCount ? imageFaceCount : undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -354,7 +376,10 @@ export default function TextTo3DPage() {
               previewImageUrl: url.PreviewImageUrl || url.previewImageUrl
             })),
             creditsUsed: 10, // TODO: 从响应中获取实际消耗的积分
-            expiresAt: data.expiresAt
+            expiresAt: data.expiresAt,
+            type: data.type, // 'text23d' | 'img23d'
+            prompt: data.prompt,
+            multiViewCount: data.multiViewImages?.length || 0 // 多视图图片数量
           });
           setShowCompletionModal(true);
 
@@ -599,7 +624,14 @@ export default function TextTo3DPage() {
                 <CardTitle>图片生成3D模型</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <Tabs defaultValue="single" className="w-full">
+                <Tabs defaultValue="single" className="w-full" onValueChange={(value) => {
+                  setCurrentImageTab(value as 'single' | 'multi');
+                  // 切换到多视图时，如果当前是极速版，自动切换到专业版
+                  if (value === 'multi' && imageVersion === 'rapid') {
+                    setImageVersion('pro');
+                    toast.info('多视图生成仅支持专业版和基础版，已自动切换到专业版');
+                  }
+                }}>
                   <TabsList>
                     <TabsTrigger value="single">单张图片</TabsTrigger>
                     <TabsTrigger value="multi">多视图(2-4张)</TabsTrigger>
@@ -616,10 +648,12 @@ export default function TextTo3DPage() {
                             onChange={handleSingleImageUpload}
                             className="hidden"
                           />
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400">
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 h-[280px] flex flex-col items-center justify-center">
                             {imagePreview ? (
-                              <div>
-                                <img src={imagePreview} alt="Preview" className="max-h-64 mx-auto mb-4" />
+                              <div className="flex flex-col items-center justify-center h-full">
+                                <div className="h-52 w-full flex items-center justify-center mb-3">
+                                  <img src={imagePreview} alt="Preview" className="max-h-full max-w-full object-contain" />
+                                </div>
                                 <p className="text-sm text-gray-600">点击重新上传</p>
                               </div>
                             ) : (
@@ -635,13 +669,16 @@ export default function TextTo3DPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="multi" className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                      <p className="text-sm text-blue-800">
-                        💡 <strong>多视图生成：</strong>上传4个不同视角的图片可获得更好的3D模型效果。正面图为主图，其他三个为补充视角。
+                  <TabsContent value="multi" className="space-y-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm text-blue-800 leading-snug">
+                        💡 上传4个不同视角的图片可获得更好效果。正面图必需，左/右/后视图可选。
+                      </p>
+                      <p className="text-sm text-blue-700 mt-1.5 leading-snug">
+                        ⚠️ 仅支持<strong>专业版</strong>和<strong>基础版</strong> | 分辨率128-5000px | 大小≤6MB | JPG/PNG/WEBP
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       {[
                         { type: 'front', label: '正面视图（主图）' },
                         { type: 'left', label: '左侧视图' },
@@ -649,7 +686,7 @@ export default function TextTo3DPage() {
                         { type: 'back', label: '背面/后视图' }
                       ].map((view) => (
                         <div key={view.type}>
-                          <Label className="text-sm font-medium mb-2 block">{view.label}</Label>
+                          <Label className="text-sm font-medium mb-1.5 block">{view.label}</Label>
                           <label className="block">
                             <input
                               type="file"
@@ -657,26 +694,28 @@ export default function TextTo3DPage() {
                               onChange={(e) => handleMultiViewUpload(e, view.type)}
                               className="hidden"
                             />
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-gray-400 transition-colors">
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center cursor-pointer hover:border-gray-400 transition-colors h-[140px] flex flex-col">
                               {multiViewImages.find(img => img.viewType === view.type) ? (
-                                <div className="relative">
-                                  <img
-                                    src={multiViewImages.find(img => img.viewType === view.type)?.preview}
-                                    alt={view.label}
-                                    className="h-40 w-full object-contain rounded"
-                                  />
-                                  <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
+                                <div className="relative flex-1 flex flex-col">
+                                  <div className="h-28 w-full relative">
+                                    <img
+                                      src={multiViewImages.find(img => img.viewType === view.type)?.preview}
+                                      alt={view.label}
+                                      className="h-full w-full object-contain rounded"
+                                    />
+                                    <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1">
+                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </div>
                                   </div>
-                                  <p className="text-xs text-gray-500 mt-2">点击重新上传</p>
+                                  <p className="text-xs text-gray-500 mt-1.5">点击重传</p>
                                 </div>
                               ) : (
-                                <div className="h-40 flex flex-col items-center justify-center">
-                                  <Upload className="h-10 w-10 text-gray-400 mb-3" />
-                                  <p className="text-sm font-medium text-gray-600">{view.label}</p>
-                                  <p className="text-xs text-gray-400 mt-1">点击上传</p>
+                                <div className="h-28 flex flex-col items-center justify-center">
+                                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                                  <p className="text-xs font-medium text-gray-600">{view.type === 'front' ? '必需' : '可选'}</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">点击上传</p>
                                 </div>
                               )}
                             </div>
@@ -684,34 +723,49 @@ export default function TextTo3DPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-700">
-                        <strong>使用说明：</strong>
-                        <br />• 正面视图：必需，作为主要生成依据（支持JPG/PNG/WEBP）
-                        <br />• 其他视图：可选，提供额外的细节补充（仅支持JPG/PNG）
-                        <br />• 图片要求：分辨率128-5000px，大小不超过6MB
-                        <br />• 建议上传清晰、背景简单、光照均匀的图片
-                      </p>
-                    </div>
                   </TabsContent>
                 </Tabs>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>生成版本</Label>
-                    <Select value={imageVersion} onValueChange={setImageVersion}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="rapid">极速版 (10积分)</SelectItem>
-                        <SelectItem value="pro">专业版 (15-55积分)</SelectItem>
-                        <SelectItem value="basic">基础版</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* 生成版本 - 单独一行 */}
+                <div>
+                  <Label>生成版本</Label>
+                  <Select 
+                    value={imageVersion} 
+                    onValueChange={(value) => {
+                      // 如果在多视图模式下尝试选择极速版，阻止并提示
+                      if (currentImageTab === 'multi' && value === 'rapid') {
+                        toast.error('极速版不支持多视图生成，请选择专业版或基础版');
+                        return;
+                      }
+                      setImageVersion(value);
+                    }}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem 
+                        value="rapid" 
+                        disabled={currentImageTab === 'multi'}
+                        className={currentImageTab === 'multi' ? 'opacity-50 cursor-not-allowed' : ''}
+                      >
+                        极速版 (10积分)
+                        {currentImageTab === 'multi' && ' ⚠️ 不支持多视图'}
+                      </SelectItem>
+                      <SelectItem value="pro">专业版 (15-55积分) ✓ 支持多视图</SelectItem>
+                      <SelectItem value="basic">基础版 ✓ 支持多视图</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {currentImageTab === 'multi' && imageVersion === 'rapid' && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      ⚠️ 极速版不支持多视图，请选择专业版或基础版
+                    </p>
+                  )}
+                </div>
 
-                  {imageVersion === 'pro' && (
+                {/* 专业版选项：生成类型 + 说明 */}
+                {imageVersion === 'pro' && (
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label>生成类型</Label>
                       <Select value={imageGenerateType} onValueChange={setImageGenerateType}>
@@ -725,35 +779,28 @@ export default function TextTo3DPage() {
                           <SelectItem value="Sketch">草图线稿 (25积分)</SelectItem>
                         </SelectContent>
                       </Select>
-                      
-                      {/* 生成类型说明 */}
-                      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                        <p className="text-sm text-gray-700">
-                          {imageGenerateType === 'Normal' && (
-                            <><strong>标准模型：</strong>生成带纹理的完整几何模型，适合大多数应用场景</>
-                          )}
-                          {imageGenerateType === 'LowPoly' && (
-                            <><strong>智能减面：</strong>生成优化后的低面数模型，适合游戏和实时渲染</>
-                          )}
-                          {imageGenerateType === 'Geometry' && (
-                            <><strong>白模：</strong>生成不带纹理的几何模型，PBR材质不生效</>
-                          )}
-                          {imageGenerateType === 'Sketch' && (
-                            <><strong>草图线稿：</strong>适合草图或线稿图输入，可与文字描述同时使用</>
-                          )}
-                        </p>
-                      </div>
                     </div>
-                  )}
+                    
+                    {/* 生成类型说明 - 右侧 */}
+                    <div className="flex items-end">
+                      <p className="text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded px-3 py-2 w-full">
+                        {imageGenerateType === 'Normal' && '带纹理完整模型，适合大多数场景'}
+                        {imageGenerateType === 'LowPoly' && '低面数优化模型，适合游戏和实时渲染'}
+                        {imageGenerateType === 'Geometry' && '不带纹理几何模型，PBR材质不生效'}
+                        {imageGenerateType === 'Sketch' && '适合草图或线稿输入，可与文字描述同时使用'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
+                {/* 输出格式 + PBR材质 */}
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label>输出格式</Label>
                     {imageVersion === 'pro' ? (
-                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-700">
-                          <strong>专业版</strong>：系统自动选择最优格式，通常为GLB或FBX格式
-                        </p>
-                      </div>
+                      <p className="mt-2 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+                        系统自动选择最优格式（GLB/FBX）
+                      </p>
                     ) : (
                       <Select value={imageResultFormat} onValueChange={setImageResultFormat}>
                         <SelectTrigger className="mt-2">
@@ -769,47 +816,29 @@ export default function TextTo3DPage() {
                       </Select>
                     )}
                   </div>
+
+                  {/* PBR材质 - 右侧 */}
+                  {imageGenerateType !== 'Geometry' && (
+                    <div className="flex items-end">
+                      <div className="flex items-center space-x-2 pb-2">
+                        <input
+                          type="checkbox"
+                          id="imagePBR"
+                          checked={imageEnablePBR}
+                          onChange={(e) => setImageEnablePBR(e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label htmlFor="imagePBR">
+                          启用PBR材质 (+{imageVersion === 'rapid' ? '5' : '10'}积分)
+                        </Label>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {imageGenerateType !== 'Geometry' && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="imagePBR"
-                      checked={imageEnablePBR}
-                      onChange={(e) => setImageEnablePBR(e.target.checked)}
-                      className="rounded"
-                    />
-                    <Label htmlFor="imagePBR">
-                      启用PBR材质 (+{imageVersion === 'rapid' ? '5' : '10'}积分)
-                    </Label>
-                  </div>
-                )}
-
-                {imageVersion === 'pro' && (
-                  <div>
-                    <Label>模型面数 (可选)</Label>
-                    <div className="mt-2">
-                      <input
-                        type="number"
-                        min="40000"
-                        max="500000"
-                        step="10000"
-                        value={imageFaceCount || ''}
-                        onChange={(e) => setImageFaceCount(e.target.value ? parseInt(e.target.value) : undefined)}
-                        placeholder="默认500000，范围：40000-500000"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        自定义面数 (+10积分)，留空使用默认值
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="font-semibold">
-                    预计消耗积分: {calculateCredits(imageVersion, imageGenerateType, imageEnablePBR, multiViewImages.length > 0, !!imageFaceCount)}
+                <div className="bg-blue-50 px-3 py-2.5 rounded-lg">
+                  <p className="text-sm font-semibold">
+                    预计消耗积分: {calculateCredits(imageVersion, imageGenerateType, imageEnablePBR, multiViewImages.length > 0, false)}
                   </p>
                 </div>
 

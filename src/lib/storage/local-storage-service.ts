@@ -14,15 +14,18 @@ const unlink = promisify(fs.unlink);
 const readdir = promisify(fs.readdir);
 const stat = promisify(fs.stat);
 
-// 存储根目录：项目根目录/storage/3d-models
-const STORAGE_ROOT = path.join(process.cwd(), 'storage', '3d-models');
+// 存储根目录：项目根目录/storage/
+const STORAGE_ROOT = path.join(process.cwd(), 'storage');
+const MODELS_ROOT = path.join(STORAGE_ROOT, '3d-models');
+const MULTIVIEW_ROOT = path.join(STORAGE_ROOT, '3d-multiview');
 
 /**
  * 确保存储根目录存在
  */
 async function ensureStorageRoot() {
   try {
-    await mkdir(STORAGE_ROOT, { recursive: true });
+    await mkdir(MODELS_ROOT, { recursive: true });
+    await mkdir(MULTIVIEW_ROOT, { recursive: true });
   } catch (error) {
     console.error('[LocalStorage] Failed to create storage root:', error);
     throw error;
@@ -64,7 +67,14 @@ export const CONTENT_TYPES: Record<string, string> = {
  * 获取用户模型目录路径
  */
 function getUserModelDir(userUuid: string, recordUuid: string): string {
-  return path.join(STORAGE_ROOT, userUuid, recordUuid);
+  return path.join(MODELS_ROOT, userUuid, recordUuid);
+}
+
+/**
+ * 获取用户多视图图片目录路径
+ */
+function getUserMultiViewDir(userUuid: string, recordUuid: string): string {
+  return path.join(MULTIVIEW_ROOT, userUuid, recordUuid);
 }
 
 /**
@@ -204,30 +214,39 @@ export async function readLocalFile(
 }
 
 /**
- * 删除用户的某个记录的所有文件
+ * 删除用户的某个记录的所有文件（包括3D模型和多视图图片）
  */
 export async function deleteRecordFiles(
   userUuid: string,
   recordUuid: string
 ): Promise<void> {
   const modelDir = getUserModelDir(userUuid, recordUuid);
+  const multiViewDir = getUserMultiViewDir(userUuid, recordUuid);
 
+  // 删除3D模型文件
   try {
-    // 读取目录中的所有文件
     const files = await readdir(modelDir);
-
-    // 删除所有文件
     await Promise.all(
       files.map(file => unlink(path.join(modelDir, file)))
     );
-
-    // 删除目录
     await promisify(fs.rmdir)(modelDir);
-
-    console.log(`[LocalStorage] ✅ Deleted all files for record ${recordUuid}`);
+    console.log(`[LocalStorage] ✅ Deleted 3D model files for record ${recordUuid}`);
   } catch (error) {
-    console.error(`[LocalStorage] Failed to delete record files:`, error);
-    // 不抛出错误，继续执行
+    // 目录可能不存在，不报错
+    console.log(`[LocalStorage] No model files to delete for ${recordUuid}`);
+  }
+
+  // 删除多视图图片
+  try {
+    const files = await readdir(multiViewDir);
+    await Promise.all(
+      files.map(file => unlink(path.join(multiViewDir, file)))
+    );
+    await promisify(fs.rmdir)(multiViewDir);
+    console.log(`[LocalStorage] ✅ Deleted multiview images for record ${recordUuid}`);
+  } catch (error) {
+    // 目录可能不存在，不报错
+    console.log(`[LocalStorage] No multiview images to delete for ${recordUuid}`);
   }
 }
 
@@ -261,7 +280,7 @@ export async function getStorageStats(): Promise<{
   let fileCount = 0;
   const users = new Set<string>();
 
-  async function scanDirectory(dir: string) {
+  async function scanDirectory(dir: string, isRootLevel: boolean = false) {
     try {
       const entries = await readdir(dir, { withFileTypes: true });
 
@@ -270,10 +289,10 @@ export async function getStorageStats(): Promise<{
 
         if (entry.isDirectory()) {
           // 记录用户UUID（第一层目录）
-          if (dir === STORAGE_ROOT) {
+          if (isRootLevel) {
             users.add(entry.name);
           }
-          await scanDirectory(fullPath);
+          await scanDirectory(fullPath, false);
         } else if (entry.isFile()) {
           const stats = await stat(fullPath);
           totalSize += stats.size;
@@ -285,7 +304,11 @@ export async function getStorageStats(): Promise<{
     }
   }
 
-  await scanDirectory(STORAGE_ROOT);
+  // 扫描3D模型目录
+  await scanDirectory(MODELS_ROOT, true);
+  
+  // 扫描多视图图片目录
+  await scanDirectory(MULTIVIEW_ROOT, true);
 
   return {
     totalSize,
