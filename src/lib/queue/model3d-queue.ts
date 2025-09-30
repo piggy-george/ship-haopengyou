@@ -2,6 +2,12 @@ import { db } from '@/db';
 import { model3dQueue, aiGenerationRecords } from '@/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { Model3DService, type Model3DParams } from '@/lib/ai/model3d-service';
+import { 
+  downloadFileFromUrl, 
+  downloadPreviewImage,
+  saveMetadata,
+  generateFileUrl 
+} from '@/lib/storage/local-storage-service';
 
 export interface QueueStats {
   position: number;
@@ -142,25 +148,127 @@ export class SmartQueueManager {
   }
 
   private async handleJobSuccess(recordUuid: string, resultFiles: any[]): Promise<void> {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    console.log(`[Model3DQueue] ✅ Job success for: ${recordUuid}`);
+    console.log(`[Model3DQueue] Result files count: ${resultFiles.length}`);
 
-    // 调试：记录返回的文件信息
-    console.log('[Model3DQueue] Job success for:', recordUuid);
-    console.log('[Model3DQueue] Result files:', JSON.stringify(resultFiles, null, 2));
+    try {
+      // 获取记录信息
+      const record = await this.getGenerationRecord(recordUuid);
+      if (!record) {
+        throw new Error('生成记录不存在');
+      }
 
-    await db.update(aiGenerationRecords)
-      .set({
-        status: 'completed',
-        output_urls: resultFiles,
-        completed_at: new Date(),
-        expires_at: expiresAt
-      })
-      .where(eq(aiGenerationRecords.uuid, recordUuid));
+      const userUuid = record.user_uuid;
 
-    await db.update(model3dQueue)
-      .set({ status: 'completed', completed_at: new Date() })
-      .where(eq(model3dQueue.record_uuid, recordUuid));
+      // 1️⃣ 立即下载所有文件到本地存储
+      console.log(`[Model3DQueue] 🔽 开始下载文件到本地存储...`);
+      
+      const localFiles: any[] = [];
+      let totalSize = 0;
+
+      for (const file of resultFiles) {
+        try {
+          // 下载模型文件
+          const downloadResult = await downloadFileFromUrl(
+            file.Url,
+            userUuid,
+            recordUuid,
+            file.Type
+          );
+
+          totalSize += downloadResult.size;
+
+          // 生成本地访问URL
+          const localUrl = generateFileUrl(recordUuid, downloadResult.filename);
+
+          localFiles.push({
+            type: file.Type,
+            url: localUrl,  // ⭐ 保存本地URL，而不是腾讯COS URL
+            filename: downloadResult.filename,
+            size: downloadResult.size,
+            localPath: downloadResult.localPath,
+            originalUrl: file.Url, // 保留原始URL用于备份
+            previewImageUrl: file.PreviewImageUrl
+          });
+
+          console.log(`[Model3DQueue] ✅ Downloaded ${file.Type}: ${downloadResult.filename} (${(downloadResult.size / 1024 / 1024).toFixed(2)} MB)`);
+        } catch (error) {
+          console.error(`[Model3DQueue] ❌ Failed to download ${file.Type}:`, error);
+          // 继续处理其他文件，不中断流程
+        }
+      }
+
+      // 2️⃣ 下载预览图（如果有）
+      if (resultFiles[0]?.PreviewImageUrl) {
+        try {
+          const previewResult = await downloadPreviewImage(
+            resultFiles[0].PreviewImageUrl,
+            userUuid,
+            recordUuid
+          );
+
+          if (previewResult.filename) {
+            const previewUrl = generateFileUrl(recordUuid, previewResult.filename);
+            // 更新第一个文件的预览图URL
+            if (localFiles[0]) {
+              localFiles[0].previewImageUrl = previewUrl;
+            }
+            console.log(`[Model3DQueue] ✅ Downloaded preview image: ${previewResult.filename}`);
+          }
+        } catch (error) {
+          console.error(`[Model3DQueue] Failed to download preview image (non-critical):`, error);
+        }
+      }
+
+      // 3️⃣ 保存元数据
+      try {
+        const metadata = {
+          recordUuid,
+          userUuid,
+          generatedAt: new Date().toISOString(),
+          files: localFiles.map(f => ({
+            type: f.type,
+            filename: f.filename,
+            size: f.size,
+            url: f.url
+          })),
+          totalSize,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          prompt: record.prompt,
+          version: record.params?.version || 'unknown'
+        };
+
+        await saveMetadata(userUuid, recordUuid, metadata);
+        console.log(`[Model3DQueue] ✅ Saved metadata`);
+      } catch (error) {
+        console.error(`[Model3DQueue] Failed to save metadata (non-critical):`, error);
+      }
+
+      // 4️⃣ 更新数据库记录
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      await db.update(aiGenerationRecords)
+        .set({
+          status: 'completed',
+          output_urls: localFiles,  // ⭐ 保存本地URL
+          completed_at: new Date(),
+          expires_at: expiresAt
+        })
+        .where(eq(aiGenerationRecords.uuid, recordUuid));
+
+      await db.update(model3dQueue)
+        .set({ status: 'completed', completed_at: new Date() })
+        .where(eq(model3dQueue.record_uuid, recordUuid));
+
+      console.log(`[Model3DQueue] ✅✅ All files downloaded and saved successfully!`);
+      console.log(`[Model3DQueue] Total storage used: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+      console.log(`[Model3DQueue] Expires at: ${expiresAt.toISOString()}`);
+    } catch (error) {
+      console.error(`[Model3DQueue] ❌ Error in handleJobSuccess:`, error);
+      // 如果下载失败，标记任务为失败
+      await this.handleJobFailure(recordUuid, '文件下载到本地存储失败');
+    }
   }
 
   private async handleJobFailure(recordUuid: string, errorMessage: string): Promise<void> {

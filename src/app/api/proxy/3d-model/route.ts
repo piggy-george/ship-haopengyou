@@ -12,6 +12,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // 如果是本地存储URL，直接重定向到本地存储API
+    if (modelUrl.startsWith('/api/storage/')) {
+      console.log('[3D Proxy] 重定向到本地存储:', modelUrl);
+      return NextResponse.redirect(new URL(modelUrl, req.url));
+    }
+
     // 验证URL是否来自腾讯云COS
     if (!modelUrl.includes('tencentcos.cn') && !modelUrl.includes('cos.ap-')) {
       return NextResponse.json(
@@ -29,29 +35,51 @@ export async function GET(req: NextRequest) {
     });
 
     if (!response.ok) {
+      console.error(`[3D Proxy] Failed to fetch model: ${response.status} ${response.statusText}`);
+      
+      // 检查是否是签名过期或权限问题
+      if (response.status === 403) {
+        return NextResponse.json(
+          { error: '模型链接已过期，请重新生成' },
+          { status: 403 }
+        );
+      }
+      
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    
+    // 检查返回的是否是错误信息（XML或HTML）而不是模型文件
+    if (contentType.includes('xml') || contentType.includes('html')) {
+      const errorText = await response.text();
+      console.error('[3D Proxy] Received error response:', errorText);
+      return NextResponse.json(
+        { error: '模型链接无效或已过期' },
+        { status: 400 }
+      );
     }
 
     const data = await response.arrayBuffer();
     
     // 根据文件扩展名设置正确的Content-Type
-    let contentType = 'application/octet-stream';
+    let outputContentType = 'application/octet-stream';
     if (modelUrl.includes('.glb')) {
-      contentType = 'model/gltf-binary';
+      outputContentType = 'model/gltf-binary';
     } else if (modelUrl.includes('.gltf')) {
-      contentType = 'model/gltf+json';
+      outputContentType = 'model/gltf+json';
     } else if (modelUrl.includes('.obj')) {
-      contentType = 'text/plain';
+      outputContentType = 'text/plain';
     } else if (modelUrl.includes('.fbx')) {
-      contentType = 'application/octet-stream';
+      outputContentType = 'application/octet-stream';
     } else if (modelUrl.includes('.stl')) {
-      contentType = 'application/sla';
+      outputContentType = 'application/sla';
     }
 
     return new NextResponse(data, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
+        'Content-Type': outputContentType,
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
         'Access-Control-Allow-Headers': 'Content-Type',

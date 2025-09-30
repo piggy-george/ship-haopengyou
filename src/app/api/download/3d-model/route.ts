@@ -13,6 +13,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    console.log('[Download API] 下载请求:', { modelUrl, filename });
+
+    // 如果是本地存储URL，直接重定向到本地存储API（带download参数和filename）
+    if (modelUrl.startsWith('/api/storage/')) {
+      const url = new URL(modelUrl, req.url);
+      url.searchParams.set('download', '1');
+      if (filename) {
+        url.searchParams.set('filename', filename);
+      }
+      console.log('[Download API] 重定向到本地存储:', url.toString());
+      return NextResponse.redirect(url);
+    }
+
     // 验证URL是否来自腾讯云COS
     if (!modelUrl.includes('tencentcos.cn') && !modelUrl.includes('cos.ap-')) {
       return NextResponse.json(
@@ -20,8 +33,6 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log('[Download API] 下载请求:', { modelUrl, filename });
 
     // 获取文件
     const response = await fetch(modelUrl, {

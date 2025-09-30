@@ -23,33 +23,60 @@ export function Model3DViewer({
   autoRotate = true,
   enableAR = false
 }: Model3DViewerProps) {
-  // 使用代理URL避免CORS问题
-  const proxyUrl = modelUrl && (modelUrl.includes('tencentcos.cn') || modelUrl.includes('cos.ap-'))
-    ? `/api/proxy/3d-model?url=${encodeURIComponent(modelUrl)}`
-    : modelUrl || '';
+  // 检测文件格式
+  const fileExtension = modelUrl?.toLowerCase().split('.').pop()?.split('?')[0] || modelType;
+  const isSTL = fileExtension === 'stl';
+  
+  // 判断URL类型：
+  // - 本地存储URL（/api/storage/...）：直接使用
+  // - 腾讯COS URL：使用代理避免CORS问题
+  const isLocalStorage = modelUrl?.startsWith('/api/storage/');
+  const proxyUrl = isLocalStorage
+    ? modelUrl
+    : modelUrl && (modelUrl.includes('tencentcos.cn') || modelUrl.includes('cos.ap-'))
+      ? `/api/proxy/3d-model?url=${encodeURIComponent(modelUrl)}`
+      : modelUrl || '';
+  
   const viewerRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [modelViewerLoaded, setModelViewerLoaded] = useState(false);
+  
+  // 检查 model-viewer 是否已加载（可能在之前的实例中已加载）
+  const isModelViewerScriptLoaded = () => {
+    return typeof window !== 'undefined' && window.customElements && window.customElements.get('model-viewer') !== undefined;
+  };
+  
+  const [modelViewerLoaded, setModelViewerLoaded] = useState(isModelViewerScriptLoaded());
 
   useEffect(() => {
-    if (modelViewerLoaded && viewerRef.current) {
+    if (modelViewerLoaded && viewerRef.current && !isSTL) {
       const viewer = viewerRef.current;
-      console.log('[Model3DViewer] Initializing model-viewer with URL:', proxyUrl);
       
       const handleLoad = () => {
-        console.log('[Model3DViewer] Model loaded successfully');
         setIsLoading(false);
         setError(null);
       };
 
-      const handleError = (event: any) => {
+      const handleError = async (event: any) => {
         console.error('[Model3DViewer] Model viewer error:', event);
         setIsLoading(false);
-        setError('模型加载失败，请检查网络连接');
+        
+        // 尝试获取详细错误信息
+        try {
+          const response = await fetch(proxyUrl);
+          if (!response.ok) {
+            const errorData = await response.json();
+            setError(errorData.error || '模型加载失败');
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to fetch error details:', e);
+        }
+        
+        setError('模型加载失败，文件可能已过期或格式不支持');
       };
 
       viewer.addEventListener('load', handleLoad);
@@ -60,10 +87,16 @@ export function Model3DViewer({
         if (viewer) {
           viewer.removeEventListener('load', handleLoad);
           viewer.removeEventListener('error', handleError);
+          // 清理模型资源
+          try {
+            viewer.src = '';
+          } catch (e) {
+            console.error('Failed to clear model src:', e);
+          }
         }
       };
     }
-  }, [modelViewerLoaded, proxyUrl]);
+  }, [modelViewerLoaded, proxyUrl, isSTL]);
 
   const handleZoomIn = () => {
     const newZoom = Math.min(zoom * 1.2, 3);
@@ -100,7 +133,11 @@ export function Model3DViewer({
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = modelUrl;
+    // 如果是本地存储，添加 download 参数
+    const downloadUrl = isLocalStorage 
+      ? `${modelUrl}?download=1`
+      : modelUrl;
+    link.href = downloadUrl;
     link.download = `model.${modelType}`;
     document.body.appendChild(link);
     link.click();
@@ -124,7 +161,6 @@ export function Model3DViewer({
         type="module"
         strategy="lazyOnload"
         onLoad={() => {
-          console.log('[Model3DViewer] model-viewer script loaded');
           setModelViewerLoaded(true);
         }}
         onError={(e) => {
@@ -132,6 +168,12 @@ export function Model3DViewer({
           setError('3D查看器加载失败');
         }}
       />
+      
+      {/* 如果脚本已经加载过，Script组件不会再次触发onLoad，所以需要手动检查 */}
+      {!modelViewerLoaded && typeof window !== 'undefined' && isModelViewerScriptLoaded() && (() => {
+        setTimeout(() => setModelViewerLoaded(true), 0);
+        return null;
+      })()}
 
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60]" style={{ pointerEvents: 'auto' }}>
         <div className="bg-white rounded-lg w-full max-w-4xl h-[80vh] flex flex-col">
@@ -167,10 +209,7 @@ export function Model3DViewer({
               )}
               {onClose && (
                 <Button
-                  onClick={() => {
-                    console.log('[Model3DViewer] Close button clicked');
-                    onClose();
-                  }}
+                  onClick={onClose}
                   variant="ghost"
                   size="sm"
                 >
@@ -207,7 +246,41 @@ export function Model3DViewer({
               </div>
             )}
 
-            {modelViewerLoaded && proxyUrl && (
+            {/* STL格式提示 */}
+            {isSTL && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
+                <div className="text-center max-w-md p-6">
+                  <div className="text-yellow-500 mb-4">
+                    <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold mb-2">STL格式暂不支持在线预览</h4>
+                  <p className="text-gray-600 mb-4">
+                    STL格式需要专业的3D建模软件查看。请下载文件后使用以下软件打开：
+                  </p>
+                  <ul className="text-sm text-gray-500 mb-4 text-left space-y-1">
+                    <li>• Blender（免费开源）</li>
+                    <li>• MeshLab（免费）</li>
+                    <li>• Autodesk Fusion 360</li>
+                    <li>• Windows 3D Viewer（Windows系统自带）</li>
+                  </ul>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={handleDownload} variant="default">
+                      <Download className="w-4 h-4 mr-2" />
+                      下载STL文件
+                    </Button>
+                    {onClose && (
+                      <Button onClick={onClose} variant="outline">
+                        关闭
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {modelViewerLoaded && proxyUrl && !isSTL && (
               // @ts-ignore - model-viewer is a web component
               <model-viewer
                 ref={viewerRef}

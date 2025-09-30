@@ -4,7 +4,7 @@ export interface Model3DParams {
   imageUrl?: string;
   imageBase64?: string;
   multiViewImages?: Array<{
-    viewType: 'front' | 'left' | 'right' | 'back';
+    viewType: 'left' | 'right' | 'back';
     viewImageUrl?: string;
     viewImageBase64?: string;
   }>;
@@ -116,13 +116,6 @@ export class Model3DService {
           throw new Error('不支持的查询版本');
       }
 
-      // 调试：记录API响应
-      console.log('[Model3DService] Query response:', {
-        status: response.Status,
-        resultFiles: response.ResultFile3Ds,
-        hasFiles: response.ResultFile3Ds && response.ResultFile3Ds.length > 0
-      });
-
       return {
         status: response.Status,
         errorCode: response.ErrorCode,
@@ -145,8 +138,11 @@ export class Model3DService {
     if (params.multiViewImages?.length) {
       request.MultiViewImages = params.multiViewImages.map(img => {
         const viewImage: any = { ViewType: img.viewType };
-        if (img.viewImageUrl) viewImage.ViewImageUrl = img.viewImageUrl;
-        if (img.viewImageBase64) viewImage.ViewImageBase64 = img.viewImageBase64;
+        if (img.viewImageUrl) {
+          viewImage.ViewImageUrl = img.viewImageUrl;
+        }
+        // 注意：腾讯云API不支持ViewImageBase64，只支持ViewImageUrl
+        // viewImageBase64需要先上传到存储服务获得URL
         return viewImage;
       });
     }

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Wand2, Upload, Image, Images, FileText } from 'lucide-react';
+import { Loader2, Wand2, Upload, Image as ImageIcon, Images, FileText } from 'lucide-react';
 import { ProgressModal } from '@/components/ai-tools/ProgressModal';
 import { CompletionModal } from '@/components/ai-tools/CompletionModal';
 import { Model3DViewer } from '@/components/ai-tools/Model3DViewer';
@@ -50,6 +50,7 @@ export default function TextTo3DPage() {
   const [textEnablePBR, setTextEnablePBR] = useState(false);
   const [textResultFormat, setTextResultFormat] = useState('GLB');
   const [textGenerateType, setTextGenerateType] = useState('Normal');
+  const [textFaceCount, setTextFaceCount] = useState<number | undefined>(undefined);
 
   // 图生3D状态
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -59,9 +60,10 @@ export default function TextTo3DPage() {
   const [imageEnablePBR, setImageEnablePBR] = useState(false);
   const [imageResultFormat, setImageResultFormat] = useState('GLB');
   const [imageGenerateType, setImageGenerateType] = useState('Normal');
+  const [imageFaceCount, setImageFaceCount] = useState<number | undefined>(undefined);
 
   // 处理单张图片上传
-  const handleSingleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSingleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -72,11 +74,15 @@ export default function TextTo3DPage() {
       return;
     }
 
-    // 验证文件大小（8MB）
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error('图片大小不能超过8MB');
+    // 验证文件大小（8MB，但要提醒Base64编码会增大30%）
+    if (file.size > 6 * 1024 * 1024) {
+      toast.error('图片大小不能超过6MB（编码后会增大至8MB）');
       return;
     }
+
+    // 验证分辨率
+    const isValidResolution = await validateImageResolution(file);
+    if (!isValidResolution) return;
 
     setImageFile(file);
     const reader = new FileReader();
@@ -86,23 +92,59 @@ export default function TextTo3DPage() {
     reader.readAsDataURL(file);
   };
 
+  // 验证图片分辨率
+  const validateImageResolution = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        if (width < 128 || height < 128) {
+          toast.error('图片分辨率不能小于128x128像素');
+          resolve(false);
+          return;
+        }
+        if (width > 5000 || height > 5000) {
+          toast.error('图片分辨率不能大于5000x5000像素');
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      };
+      img.onerror = () => {
+        toast.error('无法读取图片信息');
+        resolve(false);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // 处理多视图图片上传
-  const handleMultiViewUpload = (e: React.ChangeEvent<HTMLInputElement>, viewType: string) => {
+  const handleMultiViewUpload = async (e: React.ChangeEvent<HTMLInputElement>, viewType: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 验证文件格式
-    const validFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    // 验证文件格式（专业版多视图只支持jpg和png）
+    const validFormats = viewType === 'front' 
+      ? ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']  // 正面图支持webp
+      : ['image/jpeg', 'image/jpg', 'image/png'];              // 多视图只支持jpg/png
+    
     if (!validFormats.includes(file.type)) {
-      toast.error('请上传JPG、PNG、JPEG或WEBP格式的图片');
+      const formatText = viewType === 'front' 
+        ? 'JPG、PNG、JPEG或WEBP格式'
+        : 'JPG、PNG、JPEG格式（多视图不支持WEBP）';
+      toast.error(`请上传${formatText}的图片`);
       return;
     }
 
-    // 验证文件大小（8MB）
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error('图片大小不能超过8MB');
+    // 验证文件大小（8MB，但要提醒Base64编码会增大30%）
+    if (file.size > 6 * 1024 * 1024) {
+      toast.error('图片大小不能超过6MB（编码后会增大至8MB）');
       return;
     }
+
+    // 验证分辨率
+    const isValidResolution = await validateImageResolution(file);
+    if (!isValidResolution) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -139,11 +181,17 @@ export default function TextTo3DPage() {
           enablePBR: textEnablePBR,
           resultFormat: textResultFormat,
           generateType: textVersion === 'pro' ? textGenerateType : undefined,
+          faceCount: textVersion === 'pro' && textFaceCount ? textFaceCount : undefined,
         }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '生成失败');
+      if (!response.ok) {
+        const error = new Error(data.error || '生成失败');
+        (error as any).details = data.details;
+        (error as any).code = data.code || 'API_ERROR';
+        throw error;
+      }
 
       setRecordId(data.recordId);
       setQueueStatus(data.queue);
@@ -185,8 +233,10 @@ export default function TextTo3DPage() {
       return;
     }
 
-    if (!imageFile && multiViewImages.length === 0) {
-      toast.error('请上传至少一张图片');
+    // 检查是否有主图片或正面视图
+    const frontView = multiViewImages.find(img => img.viewType === 'front');
+    if (!imageFile && !frontView) {
+      toast.error('请上传主图片或正面视图图片');
       return;
     }
 
@@ -232,11 +282,17 @@ export default function TextTo3DPage() {
           enablePBR: imageEnablePBR,
           resultFormat: imageResultFormat,
           generateType: imageVersion === 'pro' ? imageGenerateType : undefined,
+          faceCount: imageVersion === 'pro' && imageFaceCount ? imageFaceCount : undefined,
         }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '生成失败');
+      if (!response.ok) {
+        const error = new Error(data.error || '生成失败');
+        (error as any).details = data.details;
+        (error as any).code = data.code || 'API_ERROR';
+        throw error;
+      }
 
       setRecordId(data.recordId);
       setQueueStatus(data.queue);
@@ -333,7 +389,7 @@ export default function TextTo3DPage() {
   };
 
   // 计算积分消耗
-  const calculateCredits = (version: string, generateType: string, enablePBR: boolean, hasMultiView: boolean) => {
+  const calculateCredits = (version: string, generateType: string, enablePBR: boolean, hasMultiView: boolean, hasFaceCount?: boolean) => {
     if (version === 'rapid') {
       return 10 + (enablePBR ? 5 : 0);
     }
@@ -347,6 +403,7 @@ export default function TextTo3DPage() {
       let credits = baseCredits[generateType] || 20;
       if (enablePBR && generateType !== 'Geometry') credits += 10;
       if (hasMultiView) credits += 10;
+      if (hasFaceCount) credits += 10;
       return credits;
     }
     return 0;
@@ -427,6 +484,24 @@ export default function TextTo3DPage() {
                           <SelectItem value="Sketch">草图生成 (25积分)</SelectItem>
                         </SelectContent>
                       </Select>
+                      
+                      {/* 生成类型说明 */}
+                      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          {textGenerateType === 'Normal' && (
+                            <><strong>标准模型：</strong>生成带纹理的完整几何模型，适合大多数应用场景</>
+                          )}
+                          {textGenerateType === 'LowPoly' && (
+                            <><strong>智能减面：</strong>生成优化后的低面数模型，适合游戏和实时渲染</>
+                          )}
+                          {textGenerateType === 'Geometry' && (
+                            <><strong>白模：</strong>生成不带纹理的几何模型，PBR材质不生效</>
+                          )}
+                          {textGenerateType === 'Sketch' && (
+                            <><strong>草图生成：</strong>适合草图或线稿图输入，可与文字描述同时使用</>
+                          )}
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -470,8 +545,29 @@ export default function TextTo3DPage() {
                   </div>
                 )}
 
+                {textVersion === 'pro' && (
+                  <div>
+                    <Label>模型面数 (可选)</Label>
+                    <div className="mt-2">
+                      <input
+                        type="number"
+                        min="40000"
+                        max="500000"
+                        step="10000"
+                        value={textFaceCount || ''}
+                        onChange={(e) => setTextFaceCount(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="默认500000，范围：40000-500000"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        自定义面数 (+10积分)，留空使用默认值
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="font-semibold">预计消耗积分: {calculateCredits(textVersion, textGenerateType, textEnablePBR, false)}</p>
+                  <p className="font-semibold">预计消耗积分: {calculateCredits(textVersion, textGenerateType, textEnablePBR, false, !!textFaceCount)}</p>
                 </div>
 
                 <Button
@@ -528,7 +624,7 @@ export default function TextTo3DPage() {
                               </div>
                             ) : (
                               <div>
-                                <Image className="mx-auto h-12 w-12 text-gray-400" />
+                                <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
                                 <p className="mt-2 text-sm text-gray-600">点击上传图片</p>
                                 <p className="text-xs text-gray-500 mt-1">支持JPG、PNG、JPEG、WEBP，最大8MB</p>
                               </div>
@@ -540,9 +636,14 @@ export default function TextTo3DPage() {
                   </TabsContent>
 
                   <TabsContent value="multi" className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                      <p className="text-sm text-blue-800">
+                        💡 <strong>多视图生成：</strong>上传4个不同视角的图片可获得更好的3D模型效果。正面图为主图，其他三个为补充视角。
+                      </p>
+                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        { type: 'front', label: '正面/主视图' },
+                        { type: 'front', label: '正面视图（主图）' },
                         { type: 'left', label: '左侧视图' },
                         { type: 'right', label: '右侧视图' },
                         { type: 'back', label: '背面/后视图' }
@@ -585,7 +686,11 @@ export default function TextTo3DPage() {
                     </div>
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <p className="text-sm text-blue-700">
-                        <strong>提示：</strong>上传同一物体的不同视角（2-4张），可以显著提高3D模型生成质量。建议上传清晰、背景简单的图片。
+                        <strong>使用说明：</strong>
+                        <br />• 正面视图：必需，作为主要生成依据（支持JPG/PNG/WEBP）
+                        <br />• 其他视图：可选，提供额外的细节补充（仅支持JPG/PNG）
+                        <br />• 图片要求：分辨率128-5000px，大小不超过6MB
+                        <br />• 建议上传清晰、背景简单、光照均匀的图片
                       </p>
                     </div>
                   </TabsContent>
@@ -617,8 +722,27 @@ export default function TextTo3DPage() {
                           <SelectItem value="Normal">标准模型 (20积分)</SelectItem>
                           <SelectItem value="LowPoly">智能减面 (25积分)</SelectItem>
                           <SelectItem value="Geometry">白模 (15积分)</SelectItem>
+                          <SelectItem value="Sketch">草图线稿 (25积分)</SelectItem>
                         </SelectContent>
                       </Select>
+                      
+                      {/* 生成类型说明 */}
+                      <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          {imageGenerateType === 'Normal' && (
+                            <><strong>标准模型：</strong>生成带纹理的完整几何模型，适合大多数应用场景</>
+                          )}
+                          {imageGenerateType === 'LowPoly' && (
+                            <><strong>智能减面：</strong>生成优化后的低面数模型，适合游戏和实时渲染</>
+                          )}
+                          {imageGenerateType === 'Geometry' && (
+                            <><strong>白模：</strong>生成不带纹理的几何模型，PBR材质不生效</>
+                          )}
+                          {imageGenerateType === 'Sketch' && (
+                            <><strong>草图线稿：</strong>适合草图或线稿图输入，可与文字描述同时使用</>
+                          )}
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -662,9 +786,30 @@ export default function TextTo3DPage() {
                   </div>
                 )}
 
+                {imageVersion === 'pro' && (
+                  <div>
+                    <Label>模型面数 (可选)</Label>
+                    <div className="mt-2">
+                      <input
+                        type="number"
+                        min="40000"
+                        max="500000"
+                        step="10000"
+                        value={imageFaceCount || ''}
+                        onChange={(e) => setImageFaceCount(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="默认500000，范围：40000-500000"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        自定义面数 (+10积分)，留空使用默认值
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="font-semibold">
-                    预计消耗积分: {calculateCredits(imageVersion, imageGenerateType, imageEnablePBR, multiViewImages.length > 0)}
+                    预计消耗积分: {calculateCredits(imageVersion, imageGenerateType, imageEnablePBR, multiViewImages.length > 0, !!imageFaceCount)}
                   </p>
                 </div>
 
@@ -768,6 +913,7 @@ export default function TextTo3DPage() {
       {/* 3D预览器 */}
       {show3DViewer && (
         <Model3DViewer
+          key={viewerUrl}
           modelUrl={viewerUrl}
           onClose={() => setShow3DViewer(false)}
         />
@@ -804,10 +950,12 @@ export default function TextTo3DPage() {
         onPreview={(url) => {
           setViewerUrl(url);
           setShow3DViewer(true);
+          // 不关闭数字资产管理器，让用户可以返回继续查看其他模型
         }}
         onARPreview={(url) => {
           setViewerUrl(url);
           setShowARViewer(true);
+          // 不关闭数字资产管理器，让用户可以返回继续查看其他模型
         }}
       />
     </div>

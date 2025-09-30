@@ -72,9 +72,6 @@ export function DigitalAssetsManager({
       const response = await fetch('/api/user/digital-assets');
       if (response.ok) {
         const data = await response.json();
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[DigitalAssetsManager] API Response:', data);
-        }
         setAssets(data.assets || []);
       } else {
         toast.error('加载数字资产失败');
@@ -191,10 +188,24 @@ export function DigitalAssetsManager({
     }
   };
 
-  // 删除资产（仅前端移除）
-  const handleDelete = (assetId: string) => {
-    setAssets(prev => prev.filter(asset => asset.id !== assetId));
-    toast.success('已从列表中移除');
+  // 删除资产
+  const handleDelete = async (assetId: string) => {
+    try {
+      const response = await fetch(`/api/user/digital-assets/${assetId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setAssets(prev => prev.filter(asset => asset.id !== assetId));
+        toast.success('已删除该记录');
+      } else {
+        const data = await response.json();
+        toast.error(data.error || '删除失败');
+      }
+    } catch (error) {
+      console.error('删除资产错误:', error);
+      toast.error('删除失败，请重试');
+    }
   };
 
   // 获取文件URL（兼容大小写）
@@ -209,7 +220,17 @@ export function DigitalAssetsManager({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent 
+        className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+        onPointerDownOutside={(e) => {
+          // 阻止点击外部区域关闭（因为可能是点击了3D预览器）
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // 阻止ESC键关闭（因为用户可能想关闭3D预览器而不是资产管理器）
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -347,22 +368,6 @@ export function DigitalAssetsManager({
                         </div>
                       </div>
 
-                      {/* 调试信息 */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="text-xs text-blue-500 bg-blue-50 p-2 rounded mb-2">
-                          状态: {asset.status} | 文件数: {asset.outputUrls?.length || 0} | 
-                          下载链接: {getFileUrl(asset.outputUrls?.[0]) ? '有效' : '无效'}
-                          {asset.outputUrls?.[0] && (
-                            <div className="mt-1">
-                              <div>文件结构: {JSON.stringify(asset.outputUrls[0], null, 2)}</div>
-                            </div>
-                          )}
-                          {getFileUrl(asset.outputUrls?.[0]) && (
-                            <div className="mt-1 break-all">URL: {getFileUrl(asset.outputUrls[0])}</div>
-                          )}
-                        </div>
-                      )}
-
                       {/* 操作按钮 - 成功完成的资产显示按钮 */}
                       {asset.status === 'completed' && (
                         <div className="space-y-2">
@@ -434,7 +439,7 @@ export function DigitalAssetsManager({
                       {asset.status === 'failed' && (
                         <div className="text-xs text-red-500 text-center py-3 bg-red-50 rounded border border-red-200">
                           <div className="font-medium">生成失败</div>
-                          <div className="mt-1">请检查参数后重新尝试</div>
+                          <div className="mt-1">请重新尝试</div>
                         </div>
                       )}
 
