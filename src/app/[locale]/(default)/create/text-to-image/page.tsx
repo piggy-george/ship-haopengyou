@@ -1,22 +1,15 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import { useAppContext } from '@/contexts/app'
 import { ImageGenerator } from '@/components/ai-tools/ImageGenerator'
 import { GenerationHistory } from '@/components/ai-tools/GenerationHistory'
-import { useEffect } from 'react'
+import { LoginRequired } from '@/components/auth/LoginRequired'
 
 export default function TextToImagePage() {
-  const { data: session } = useSession()
-  const { setShowSignModal } = useAppContext()
-
-  useEffect(() => {
-    if (!session) {
-      setShowSignModal(true)
-    }
-  }, [session, setShowSignModal])
-
   return (
+    <LoginRequired 
+      title="文生图创作"
+      description="请登录后使用文生图功能"
+    >
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">文生图创作</h1>
@@ -34,5 +27,6 @@ export default function TextToImagePage() {
         </div>
       </div>
     </div>
+    </LoginRequired>
   )
 }

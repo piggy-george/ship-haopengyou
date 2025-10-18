@@ -30,7 +30,43 @@
     "google_sign_in": "Sign in with Google",
     "github_sign_in": "Sign in with GitHub",
     "close_title": "Close",
-    "cancel_title": "Cancel"
+    "cancel_title": "Cancel",
+    "email_login_divider": "Or sign in with email",
+    "login_button": "Sign In",
+    "logging_in": "Signing in...",
+    "register_link": "Sign up now",
+    "login_success": "Sign in successful",
+    "login_failed": "Sign in failed, please check your email and password",
+    "terms_agreement": "By clicking continue, you agree to our",
+    "terms_of_service": "Terms of Service",
+    "and": "and",
+    "privacy_policy": "Privacy Policy"
+  },
+  "register": {
+    "title": "Create Account",
+    "description": "Create your new account",
+    "email_label": "Email",
+    "email_placeholder": "Enter your email",
+    "username_label": "Username",
+    "username_placeholder": "Enter your username",
+    "username_tip": "If not filled, email prefix will be used as username",
+    "password_label": "Password",
+    "password_placeholder": "Enter your password",
+    "confirm_password_label": "Confirm Password",
+    "confirm_password_placeholder": "Enter your password again",
+    "register_button": "Sign Up",
+    "registering": "Signing up...",
+    "login_link": "Already have an account? Sign in now",
+    "password_mismatch": "Passwords do not match",
+    "register_success": "Registration successful! Please sign in",
+    "register_failed": "Registration failed"
+  },
+  "auth": {
+    "login_required": "Login Required",
+    "login_required_description": "Please sign in to access this feature",
+    "login_required_message": "This feature requires authentication. Please sign in to your account first.",
+    "login_now": "Sign In Now",
+    "loading": "Loading..."
   },
   "my_orders": {
     "title": "My Orders",
@@ -132,5 +168,72 @@
     "contact_tip": "Other ways to contact us",
     "rating_tip": "How do you feel about ShipAny?",
     "placeholder": "Leave your words here..."
+  },
+  "create": {
+    "page_title": "AI Creation Center",
+    "page_description": "Please sign in to use AI creation features",
+    "page_subtitle": "Choose your creative tool and let AI bring your ideas to life",
+    "text_to_image": {
+      "title": "Text to Image",
+      "description": "Generate beautiful images from text descriptions, supports multiple art styles",
+      "button": "Start Creating"
+    },
+    "image_to_image": {
+      "title": "Image to Image",
+      "description": "Transform existing images with style transfer, local editing, and enhancements",
+      "button": "Start Editing"
+    },
+    "text_to_3d": {
+      "title": "3D Modeling",
+      "description": "Convert 2D images to 3D models, supports text-to-3D generation",
+      "button": "Generate Model"
+    },
+    "credits": {
+      "title": "Credit Cost Overview",
+      "text_to_image": "Text to Image",
+      "text_to_image_cost": "10-40 credits/time",
+      "image_to_image": "Image to Image",
+      "image_to_image_cost": "15-30 credits/time",
+      "text_to_3d": "3D Modeling",
+      "text_to_3d_cost": "50-200 credits/time"
+    }
+  },
+  "admin": {
+    "users": {
+      "title": "User List",
+      "description": "Manage all registered users (passwords displayed in plain text)",
+      "email": "Email",
+      "nickname": "Nickname",
+      "password": "Password (Plain Text)",
+      "account_type": "Account Type",
+      "account_type_email": "Email/Password",
+      "account_type_oauth": "OAuth",
+      "oauth_user": "OAuth User",
+      "decrypt_failed": "Decryption Failed",
+      "credits": "Credits",
+      "avatar": "Avatar",
+      "created_at": "Registration Time"
+    },
+    "orders": {
+      "title": "Paid Orders",
+      "order_no": "Order No",
+      "paid_email": "Paid Email",
+      "product_name": "Product Name",
+      "amount": "Amount",
+      "created_at": "Created At"
+    },
+    "feedbacks": {
+      "title": "Feedbacks",
+      "user": "User",
+      "content": "Content",
+      "rating": "Rating",
+      "created_at": "Created At",
+      "actions": "Actions",
+      "view_user": "View user"
+    },
+    "community": {
+      "title": "Community Content Moderation",
+      "description": "Manage and moderate user-submitted community works"
+    }
   }
 }

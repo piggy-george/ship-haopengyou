@@ -3,13 +3,15 @@ import TableSlot from "@/components/dashboard/slots/table";
 import { Table as TableSlotType } from "@/types/slots/table";
 import { getFeedbacks } from "@/models/feedback";
 import moment from "moment";
+import { getTranslations } from 'next-intl/server';
 
-export default async function () {
+export default async function FeedbacksPage() {
+  const t = await getTranslations('admin.feedbacks');
   const feedbacks = await getFeedbacks(1, 50);
 
   const columns: TableColumn[] = [
     {
-      title: "User",
+      title: t('user'),
       name: "user",
       callback: (row) => {
         if (!row.user || !row.user.avatar_url) {
@@ -29,32 +31,32 @@ export default async function () {
     },
     {
       name: "content",
-      title: "Content",
+      title: t('content'),
       callback: (row) => row.content,
     },
     {
       name: "rating",
-      title: "Rating",
+      title: t('rating'),
       callback: (row) => row.rating,
     },
     {
       name: "created_at",
-      title: "Created At",
+      title: t('created_at'),
       callback: (row) => moment(row.created_at).format("YYYY-MM-DD HH:mm:ss"),
     },
     {
       name: "actions",
-      title: "Actions",
+      title: t('actions'),
       callback: (row) => (
         <a href={`/admin/users?user_uuid=${row.user_uuid}`} target="_blank">
-          View user
+          {t('view_user')}
         </a>
       ),
     },
   ];
 
   const table: TableSlotType = {
-    title: "Feedbacks",
+    title: t('title'),
     columns,
     data: feedbacks,
   };

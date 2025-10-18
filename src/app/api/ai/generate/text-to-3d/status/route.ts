@@ -6,7 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { SmartQueueManager } from '@/lib/queue/model3d-queue';
 
 // 临时测试开关 - 测试完成后设置为 true
-const REQUIRE_LOGIN = false; // TODO: 测试完成后改为 true
+const REQUIRE_LOGIN = true; // TODO: 测试完成后改为 true
 
 export async function GET(req: NextRequest) {
   try {

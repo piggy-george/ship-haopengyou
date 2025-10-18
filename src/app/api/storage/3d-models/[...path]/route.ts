@@ -123,7 +123,7 @@ export async function GET(
         headers['Content-Disposition'] = `attachment; filename="${customFilename}"`;
       }
 
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(new Uint8Array(fileBuffer), {
         status: 200,
         headers,
       });

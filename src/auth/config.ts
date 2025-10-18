@@ -9,8 +9,84 @@ import { getIsoTimestr } from "@/lib/time";
 import { getUuid } from "@/lib/hash";
 import { saveUser } from "@/services/user";
 import { handleSignInUser } from "./handler";
+import { verifyPassword } from '@/lib/password';
+import { db } from '@/db';
+import { users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 let providers: Provider[] = [];
+
+// Email & Password Auth
+providers.push(
+  CredentialsProvider({
+    id: "credentials",
+    name: "邮箱密码",
+    credentials: {
+      email: { 
+        label: "邮箱", 
+        type: "email", 
+        placeholder: "[email protected]" 
+      },
+      password: { 
+        label: "密码", 
+        type: "password" 
+      },
+    },
+
+    async authorize(credentials, req) {
+      try {
+        if (!credentials?.email || !credentials?.password) {
+          console.log("[登录] 缺少邮箱或密码");
+          return null;
+        }
+
+        // 查找用户
+        const userResult = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, (credentials.email as string).toLowerCase()))
+          .limit(1);
+
+        if (userResult.length === 0) {
+          console.log("[登录] 用户不存在:", credentials.email);
+          return null;
+        }
+
+        const user = userResult[0];
+
+        // 检查是否有密码（防止OAuth用户用密码登录）
+        if (!user.password_encrypted) {
+          console.log("[登录] OAuth用户尝试用密码登录");
+          return null;
+        }
+
+        // 验证密码
+        const isValidPassword = verifyPassword(
+          credentials.password as string,
+          user.password_encrypted
+        );
+
+        if (!isValidPassword) {
+          console.log("[登录] 密码错误");
+          return null;
+        }
+
+        console.log("[登录成功]", { email: user.email });
+
+        // 返回用户信息
+        return {
+          id: user.uuid,
+          email: user.email,
+          name: user.nickname || user.email.split('@')[0],
+          image: user.avatar_url,
+        };
+      } catch (error) {
+        console.error("[登录异常]", error);
+        return null;
+      }
+    },
+  })
+);
 
 // Google One Tap Auth
 if (

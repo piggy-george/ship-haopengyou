@@ -34,6 +34,10 @@ export const users = pgTable(
     is_affiliate: boolean().notNull().default(false),
     credits: integer().notNull().default(0), // 积分余额
     cart: json(), // 购物车数据
+    
+    // 邮箱密码登录字段
+    password_encrypted: varchar({ length: 500 }), // AES加密后的密码
+    account_type: varchar({ length: 50 }).default('oauth'), // email(邮箱密码) 或 oauth(第三方登录)
   },
   (table) => [
     uniqueIndex("email_provider_unique_idx").on(

@@ -10,10 +10,10 @@ import { localStorage } from '@/lib/storage/local-storage';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { user_uuid: string; record_uuid: string; filename: string } }
+  { params }: { params: Promise<{ user_uuid: string; record_uuid: string; filename: string }> }
 ) {
   try {
-    const { user_uuid, record_uuid, filename } = params;
+    const { user_uuid, record_uuid, filename } = await params;
 
     // 验证文件名（只允许 left.png, right.png, back.png）
     const allowedFiles = ['left.png', 'right.png', 'back.png'];
@@ -32,7 +32,7 @@ export async function GET(
     );
 
     // 返回图片
-    return new NextResponse(imageBuffer, {
+    return new NextResponse(new Uint8Array(imageBuffer), {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=31536000, immutable', // 缓存1年
