@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,19 +8,30 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Gift } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { cacheGet, cacheRemove } from '@/lib/cache';
+import { CacheKey } from '@/services/constant';
 
 export default function RegisterPage() {
   const router = useRouter();
   const t = useTranslations();
   const [loading, setLoading] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     confirmPassword: '',
     nickname: '',
   });
+
+  // 从缓存中读取邀请码
+  useEffect(() => {
+    const cachedInviteCode = cacheGet(CacheKey.InviteCode);
+    if (cachedInviteCode) {
+      setInviteCode(cachedInviteCode);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +51,7 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           nickname: formData.nickname,
+          inviteCode: inviteCode || undefined,
         }),
       });
 
@@ -49,7 +61,15 @@ export default function RegisterPage() {
         throw new Error(data.error || t('register.register_failed'));
       }
 
-      toast.success(t('register.register_success'));
+      // 注册成功后清除邀请码缓存
+      cacheRemove(CacheKey.InviteCode);
+
+      // 显示成功消息，包含获得的积分信息
+      const creditsMessage = data.user?.creditsAwarded
+        ? t('register.register_success_with_credits', { credits: data.user.creditsAwarded })
+        : t('register.register_success');
+      toast.success(creditsMessage);
+
       router.push('/auth/signin');
     } catch (error: any) {
       toast.error(error.message || t('register.register_failed'));
@@ -93,6 +113,32 @@ export default function RegisterPage() {
                 disabled={loading}
               />
               <p className="text-xs text-gray-500">{t('register.username_tip')}</p>
+            </div>
+
+            {/* 邀请码输入框 */}
+            <div className="space-y-2">
+              <Label htmlFor="inviteCode">{t('register.invite_code_label')}</Label>
+              <div className="relative">
+                <Input
+                  id="inviteCode"
+                  type="text"
+                  placeholder={t('register.invite_code_placeholder')}
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  disabled={loading}
+                  className={inviteCode ? 'pr-10' : ''}
+                />
+                {inviteCode && (
+                  <Gift className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                )}
+              </div>
+              {inviteCode && (
+                <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                  <Gift className="h-3 w-3" />
+                  <span>{t('register.invite_bonus_message')}</span>
+                </div>
+              )}
+              <p className="text-xs text-gray-500">{t('register.invite_code_tip')}</p>
             </div>
 
             <div className="space-y-2">

@@ -18,6 +18,7 @@ import { ARViewer } from '@/components/ai-tools/ARViewer';
 import { ErrorModal } from '@/components/ai-tools/ErrorModal';
 import { DigitalAssetsManager } from '@/components/ai-tools/DigitalAssetsManager';
 import { LoginRequired } from '@/components/auth/LoginRequired';
+import { CreditsDisplay } from '@/components/credits/CreditsDisplay';
 
 // 临时测试开关 - 测试完成后设置为 true
 const REQUIRE_LOGIN = true; // TODO: 测试完成后改为 true
@@ -436,12 +437,15 @@ export default function TextTo3DPage() {
   };
 
   return (
-    <LoginRequired 
+    <LoginRequired
       title="AI 3D模型生成"
       description="请登录后使用3D模型生成功能"
     >
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-5xl mx-auto">
+        {/* 积分余额显示 */}
+        <CreditsDisplay showDetails={true} />
+
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold mb-2">AI 3D模型生成</h1>

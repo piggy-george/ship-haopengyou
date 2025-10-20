@@ -2,12 +2,14 @@ import { db } from '@/db';
 import { model3dQueue, aiGenerationRecords } from '@/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { Model3DService, type Model3DParams } from '@/lib/ai/model3d-service';
-import { 
-  downloadFileFromUrl, 
+import {
+  downloadFileFromUrl,
   downloadPreviewImage,
   saveMetadata,
-  generateFileUrl 
+  generateFileUrl
 } from '@/lib/storage/local-storage-service';
+// ✅ 使用 ShipAny 原生积分服务
+import { increaseCredits, CreditsTransType } from '@/services/credit';
 
 export interface QueueStats {
   position: number;
@@ -272,21 +274,60 @@ export class SmartQueueManager {
   }
 
   private async handleJobFailure(recordUuid: string, errorMessage: string): Promise<void> {
-    await db.update(aiGenerationRecords)
-      .set({
-        status: 'failed',
-        error_message: errorMessage,
-        completed_at: new Date()
-      })
-      .where(eq(aiGenerationRecords.uuid, recordUuid));
+    try {
+      // 获取记录信息
+      const record = await this.getGenerationRecord(recordUuid);
 
-    await db.update(model3dQueue)
-      .set({ status: 'failed', completed_at: new Date() })
-      .where(eq(model3dQueue.record_uuid, recordUuid));
+      // 如果已扣除积分且未退款，则退款（使用 ShipAny 原生方法）
+      if (record && record.credits_consumed > 0 && record.credits_refunded === 0) {
+        await increaseCredits({
+          user_uuid: record.user_uuid,
+          trans_type: CreditsTransType.SystemAdd,
+          credits: record.credits_consumed,
+          expired_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          order_no: '',
+        });
 
-    const record = await this.getGenerationRecord(recordUuid);
-    if (record && record.credits_used > 0) {
-      await this.refundCredits(record.user_uuid, record.credits_used, recordUuid);
+        // 更新记录
+        await db.update(aiGenerationRecords)
+          .set({
+            status: 'failed',
+            error_message: errorMessage,
+            credits_refunded: record.credits_consumed,
+            completed_at: new Date()
+          })
+          .where(eq(aiGenerationRecords.uuid, recordUuid));
+
+        console.log(`[积分退款] 已退还 ${record.credits_consumed} 积分给用户 ${record.user_uuid}`);
+      } else {
+        // 没有扣除积分，直接标记为失败
+        await db.update(aiGenerationRecords)
+          .set({
+            status: 'failed',
+            error_message: errorMessage,
+            completed_at: new Date()
+          })
+          .where(eq(aiGenerationRecords.uuid, recordUuid));
+      }
+
+      await db.update(model3dQueue)
+        .set({ status: 'failed', completed_at: new Date() })
+        .where(eq(model3dQueue.record_uuid, recordUuid));
+
+    } catch (error) {
+      console.error('[退款失败]', error);
+      // 即使退款失败，也要标记任务为失败
+      await db.update(aiGenerationRecords)
+        .set({
+          status: 'failed',
+          error_message: errorMessage,
+          completed_at: new Date()
+        })
+        .where(eq(aiGenerationRecords.uuid, recordUuid));
+
+      await db.update(model3dQueue)
+        .set({ status: 'failed', completed_at: new Date() })
+        .where(eq(model3dQueue.record_uuid, recordUuid));
     }
   }
 
@@ -365,22 +406,4 @@ export class SmartQueueManager {
     return result[0];
   }
 
-  private async refundCredits(userUuid: string, credits: number, recordUuid: string): Promise<void> {
-    const { users, creditTransactions } = await import('@/db/schema');
-    const { v4: uuidv4 } = await import('uuid');
-
-    await db.update(users)
-      .set({ credits: credits })
-      .where(eq(users.uuid, userUuid));
-
-    await db.insert(creditTransactions).values({
-      uuid: uuidv4(),
-      user_uuid: userUuid,
-      type: 'refunded',
-      amount: credits,
-      reason: 'ai_generation_failed',
-      description: '3D生成失败,积分已退还',
-      related_uuid: recordUuid
-    });
-  }
 }

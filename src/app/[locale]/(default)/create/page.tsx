@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ImageIcon, Camera, Box } from 'lucide-react'
 import { LoginRequired } from '@/components/auth/LoginRequired'
 import { useTranslations } from 'next-intl'
+import { CreditsDisplay } from '@/components/credits/CreditsDisplay'
 
 export default function CreatePage() {
   const t = useTranslations('create')
@@ -16,6 +17,8 @@ export default function CreatePage() {
       description={t('page_description')}
     >
     <div className="container mx-auto py-8">
+      {/* 积分余额显示 */}
+      <CreditsDisplay showDetails={true} />
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-4">{t('page_title')}</h1>
         <p className="text-lg text-muted-foreground">

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/db';
-import { users, aiGenerationRecords, creditTransactions } from '@/db/schema';
+import { users, aiGenerationRecords } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { Model3DService, type Model3DParams } from '@/lib/ai/model3d-service';
 import { SmartQueueManager } from '@/lib/queue/model3d-queue';
-import { localStorage } from '@/lib/storage/local-storage';
+// ✅ 使用 ShipAny 原生积分服务
+import { getUserCredits, decreaseCredits, CreditsTransType } from '@/services/credit';
 
 // 临时测试开关 - 测试完成后设置为 true
 const REQUIRE_LOGIN = false; // TODO: 测试完成后改为 true
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
 
           // 转换为完整URL（需要加上域名）
           const baseUrl = process.env.NEXT_PUBLIC_WEB_URL || process.env.NEXT_PUBLIC_APP_URL || `http://localhost:${process.env.PORT || 3000}`;
-          processedMultiViewImages = savedImages.map(img => ({
+          processedMultiViewImages = savedImages.map((img: any) => ({
             viewType: img.viewType as 'left' | 'right' | 'back',
             viewImageUrl: `${baseUrl}${img.viewImageUrl}`
           }));
@@ -152,21 +153,26 @@ export async function POST(req: NextRequest) {
       faceCount
     };
 
+    // 使用新的积分系统（ShipAny 原生）
     const creditsNeeded = model3dService.calculateCredits(params);
 
-    if (user.credits < creditsNeeded) {
-      return NextResponse.json(
-        { error: '积分不足', creditsNeeded, currentCredits: user.credits },
-        { status: 400 }
-      );
+    // 检查积分是否足够
+    const userCreditsData = await getUserCredits(user.uuid);
+    const currentBalance = userCreditsData.left_credits || 0;
+
+    if (currentBalance < creditsNeeded) {
+      return NextResponse.json({
+        error: 'insufficient_credits',
+        message: '积分不足',
+        data: {
+          currentBalance,
+          required: creditsNeeded,
+          shortage: creditsNeeded - currentBalance,
+        },
+      }, { status: 402 }); // 402 Payment Required
     }
 
-    await db.update(users)
-      .set({ credits: user.credits - creditsNeeded })
-      .where(eq(users.uuid, user.uuid));
-
-    const transUuid = uuidv4();
-
+    // 创建生成记录
     await db.insert(aiGenerationRecords).values({
       uuid: recordUuid,
       user_uuid: user.uuid,
@@ -176,29 +182,38 @@ export async function POST(req: NextRequest) {
       multi_view_images: processedMultiViewImages,
       params: params as any,
       credits_used: creditsNeeded,
-      status: 'pending'
+      status: 'pending',
+      credits_consumed: 0, // 待确认后更新
     });
 
-    await db.insert(creditTransactions).values({
-      uuid: transUuid,
+    // 扣除积分（使用 ShipAny 原生积分系统）
+    await decreaseCredits({
       user_uuid: user.uuid,
-      type: 'spent',
-      amount: -creditsNeeded,
-      reason: 'ai_generation',
-      description: `3D模型生成 (${version})`,
-      related_uuid: recordUuid
+      trans_type: CreditsTransType.Ping,
+      credits: creditsNeeded,
     });
+
+    // 更新生成记录的积分信息
+    await db.update(aiGenerationRecords)
+      .set({
+        credits_consumed: creditsNeeded,
+      })
+      .where(eq(aiGenerationRecords.uuid, recordUuid));
 
     const queueManager = SmartQueueManager.getInstance();
     await queueManager.addToQueue(recordUuid, version);
 
     const queueStats = await queueManager.getQueueStatus(recordUuid);
 
+    // 获取剩余积分
+    const remainingCreditsData = await getUserCredits(user.uuid);
+    const remainingCredits = remainingCreditsData.left_credits || 0;
+
     return NextResponse.json({
       success: true,
       recordId: recordUuid,
       creditsUsed: creditsNeeded,
-      remainingCredits: user.credits - creditsNeeded,
+      remainingCredits,
       queue: queueStats
     });
 

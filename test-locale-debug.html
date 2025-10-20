@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>语言环境调试工具</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>语言环境跳转调试</h1>
+    
+    <div class="step">
+        <h2>步骤 1: 检查当前页面</h2>
+        <div class="result">
+            <p>当前 URL: <strong id="currentUrl"></strong></p>
+            <p>路径名: <strong id="pathname"></strong></p>
+            <p>检测到的语言: <strong id="detectedLocale"></strong></p>
+        </div>
+    </div>
+
+    <div class="step">
+        <h2>步骤 2: 测试链接</h2>
+        <p>请打开浏览器控制台，然后按照以下步骤测试：</p>
+        <ol>
+            <li>访问: <a href="http://localhost:3005/zh/create/text-to-3d" target="_blank">http://localhost:3005/zh/create/text-to-3d</a></li>
+            <li>点击页面上的 Logo</li>
+            <li>查看跳转到的 URL 是 /zh/ 还是 /en/</li>
+            <li>在控制台查看网络请求</li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h2>步骤 3: 检查浏览器缓存</h2>
+        <button onclick="clearAndReload()">清除缓存并重新加载</button>
+        <p>提示: 或按 Ctrl+Shift+R (Windows) / Cmd+Shift+R (Mac)</p>
+    </div>
+
+    <script>
+        // 显示当前页面信息
+        document.getElementById('currentUrl').textContent = window.location.href;
+        document.getElementById('pathname').textContent = window.location.pathname;
+        
+        const pathname = window.location.pathname;
+        const localeMatch = pathname.match(/^\/(en|zh|zh-CN|zh-TW)/);
+        const detected = localeMatch ? localeMatch[1] : '未检测到';
+        document.getElementById('detectedLocale').textContent = detected;
+
+        function clearAndReload() {
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            window.location.reload(true);
+        }
+
+        // 监听点击事件
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                console.log('🔗 点击链接:', e.target.href);
+                console.log('📍 当前语言:', detected);
+            }
+        });
+    </script>
+</body>
+</html>

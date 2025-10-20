@@ -193,6 +193,11 @@ export const aiGenerationRecords = pgTable("ai_generation_records", {
   processing_started_at: timestamp({ withTimezone: true }),
   expires_at: timestamp({ withTimezone: true }),
 
+  // 积分消耗追踪字段
+  credits_consumed: integer().default(0),
+  credits_refunded: integer().default(0),
+  credits_transaction_uuid: varchar({ length: 255 }),
+
   // 社区功能预埋字段
   is_public: boolean().default(false),
   share_settings: json(),
@@ -465,22 +470,6 @@ export const invites = pgTable("invites", {
   index("invites_inviter_idx").on(table.inviter_uuid),
   index("invites_invitee_idx").on(table.invitee_uuid),
   unique("unique_invite").on(table.inviter_uuid, table.invitee_uuid),
-]);
-
-// 积分交易记录表
-export const creditTransactions = pgTable("credit_transactions", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  uuid: varchar({ length: 255 }).notNull().unique(),
-  user_uuid: varchar({ length: 255 }).notNull(),
-  type: varchar({ length: 50 }).notNull(), // earned, spent, refunded
-  amount: integer().notNull(),
-  reason: varchar({ length: 100 }).notNull(), // purchase, ai_generation, invite_reward等
-  description: text(),
-  related_uuid: varchar({ length: 255 }), // 关联的订单或生成记录ID
-  created_at: timestamp({ withTimezone: true }).defaultNow(),
-}, (table) => [
-  index("credit_transactions_user_idx").on(table.user_uuid),
-  index("credit_transactions_type_idx").on(table.type),
 ]);
 
 // 3D模型队列管理表

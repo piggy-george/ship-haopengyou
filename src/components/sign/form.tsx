@@ -17,7 +17,7 @@ import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useState } from 'react';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

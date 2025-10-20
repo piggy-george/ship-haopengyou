@@ -27,7 +27,6 @@ import {
 import { Header as HeaderType } from "@/types/blocks/header";
 import Icon from "@/components/icon";
 import { Link } from "@/i18n/navigation";
-import NextLink from "next/link";
 import LocaleToggle from "@/components/locale/toggle";
 import { Menu } from "lucide-react";
 import SignToggle from "@/components/sign/toggle";
@@ -38,20 +37,6 @@ import { useLocale } from "next-intl";
 
 export default function Header({ header }: { header: HeaderType }) {
   const locale = useLocale();
-
-  // Debug: 添加控制台输出来检查locale值
-  console.log('Header locale from useLocale:', locale);
-
-  // Helper function to create locale-aware URLs
-  const createLocalizedUrl = (url: string) => {
-    if (!url || url.startsWith('http') || url.startsWith('#')) {
-      return url;
-    }
-    if (url.startsWith('/')) {
-      return `/${locale}${url}`;
-    }
-    return `/${locale}/${url}`;
-  };
 
   if (header.disabled) {
     return null;
@@ -136,7 +121,7 @@ export default function Header({ header }: { header: HeaderType }) {
 
                     return (
                       <NavigationMenuItem key={i}>
-                        <NextLink
+                        <Link
                           className={cn(
                             "text-muted-foreground",
                             navigationMenuTriggerStyle,
@@ -144,7 +129,7 @@ export default function Header({ header }: { header: HeaderType }) {
                               variant: "ghost",
                             })
                           )}
-                          href={createLocalizedUrl(item.url!)}
+                          href={item.url!}
                           target={item.target}
                         >
                           {item.icon && (
@@ -154,7 +139,7 @@ export default function Header({ header }: { header: HeaderType }) {
                             />
                           )}
                           {item.title}
-                        </NextLink>
+                        </Link>
                       </NavigationMenuItem>
                     );
                   })}

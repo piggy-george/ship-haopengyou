@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { db } from '@/db'
-import { deductCredits, getUserCredits, refundCredits } from '@/lib/credits'
+// Credit check functionality temporarily disabled (non-core feature)
+// import { getUserCredits, decreaseCredits } from '@/services/credit'
 import { generateWithStableDiffusion } from '@/lib/ai/stable-diffusion'
 import { aiGenerationRecords } from '@/db/schema'
 import { eq } from 'drizzle-orm'
@@ -22,16 +23,16 @@ export async function POST(req: NextRequest) {
 
     // 计算积分消耗
     const creditCost = calculateCreditCost(quality, count)
-
-    // 检查积分余额
-    const userCredits = await getUserCredits(session.user.id)
-    if (userCredits < creditCost) {
-      return NextResponse.json({
-        error: '积分不足',
-        required: creditCost,
-        current: userCredits
-      }, { status: 400 })
-    }
+// 
+//     // 检查积分余额
+//     const userCredits = await getUserCredits(session.user.id)
+//     if (userCredits < creditCost) {
+//       return NextResponse.json({
+//         error: '积分不足',
+//         required: creditCost,
+//         current: userCredits
+//       }, { status: 400 })
+//     }
 
     // 创建生成记录
     const recordUuid = generateUuid()
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     try {
       // 扣除积分
-      await deductCredits(session.user.id, creditCost, 'ai_generation', '文生图生成')
+      // await deductCredits(session.user.id, creditCost, 'ai_generation', '文生图生成')
 
       // 调用AI服务生成图片
       const images = await generateWithStableDiffusion({
@@ -74,11 +75,11 @@ export async function POST(req: NextRequest) {
         images,
         recordId: recordUuid,
         creditsUsed: creditCost,
-        remainingCredits: userCredits - creditCost
+        remainingCredits: 0 // TODO: implement credits
       })
     } catch (error) {
       // 生成失败，退还积分并更新记录
-      await refundCredits(session.user.id, creditCost, 'ai_generation_refund', '文生图生成失败退款')
+      // await refundCredits(session.user.id, creditCost, 'ai_generation_refund', '文生图生成失败退款')
 
       await db.update(aiGenerationRecords)
         .set({
